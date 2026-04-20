@@ -168,6 +168,7 @@ public class Program
         builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
         builder.Services.AddSingleton<CookieWriter>();
         builder.Services.AddSingleton<LoginRateLimiter>();
+        builder.Services.AddSingleton<PasswordResetRateLimiter>();
         builder.Services.AddSingleton<IAvatarImageProcessor, AvatarImageProcessor>();
         builder.Services.AddSingleton<IAttachmentImageProcessor, AttachmentImageProcessor>();
 

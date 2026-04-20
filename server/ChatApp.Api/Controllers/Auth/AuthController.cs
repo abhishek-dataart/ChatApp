@@ -20,6 +20,7 @@ public class AuthController : ControllerBase
     private readonly SessionLookupService _lookup;
     private readonly CookieWriter _cookies;
     private readonly LoginRateLimiter _loginLimiter;
+    private readonly PasswordResetRateLimiter _resetLimiter;
     private readonly ICurrentUser _current;
     private readonly ChatDbContext _db;
     private readonly PasswordResetService _reset;
@@ -29,6 +30,7 @@ public class AuthController : ControllerBase
         SessionLookupService lookup,
         CookieWriter cookies,
         LoginRateLimiter loginLimiter,
+        PasswordResetRateLimiter resetLimiter,
         ICurrentUser current,
         ChatDbContext db,
         PasswordResetService reset)
@@ -37,6 +39,7 @@ public class AuthController : ControllerBase
         _lookup = lookup;
         _cookies = cookies;
         _loginLimiter = loginLimiter;
+        _resetLimiter = resetLimiter;
         _current = current;
         _db = db;
         _reset = reset;
@@ -123,9 +126,16 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest body, CancellationToken ct)
     {
-        if (!_loginLimiter.TryAcquire(ClientIp(), string.IsNullOrEmpty(body.Email) ? string.Empty : AuthValidator.NormalizeEmail(body.Email)))
+        var emailNorm = string.IsNullOrEmpty(body.Email) ? string.Empty : AuthValidator.NormalizeEmail(body.Email);
+        if (!_loginLimiter.TryAcquire(ClientIp(), emailNorm))
         {
             return Problem(statusCode: StatusCodes.Status429TooManyRequests, title: "Too many attempts.", extensions: new Dictionary<string, object?> { ["code"] = "rate_limited" });
+        }
+        // Swallow per-email exhaustion silently (return 204) so IP-rotating attackers can't
+        // probe which emails have already hit the reset cap.
+        if (!_resetLimiter.TryAcquire(emailNorm))
+        {
+            return NoContent();
         }
         await _reset.RequestAsync(body.Email ?? string.Empty, ClientIp(), ct);
         // Always 204: don't leak whether the email exists.
