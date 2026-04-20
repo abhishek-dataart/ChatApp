@@ -7,6 +7,7 @@ public static class AuthErrors
     public const string InvalidCredentials = "invalid_credentials";
     public const string InvalidCurrentPassword = "invalid_current_password";
     public const string ValidationFailed = "validation_failed";
+    public const string InvalidResetToken = "invalid_reset_token";
 }
 
 public sealed record AuthResult<T>(T? Value, string? ErrorCode, string? ErrorMessage)

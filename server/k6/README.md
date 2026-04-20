@@ -14,6 +14,8 @@ Scaffold scripts only. Not tuned for any specific environment.
 |-------------------|--------------------------------------------------------------|
 | `baseline.js`     | 300 VUs, WebSocket connect, 1 message / 5 s, 60 s duration. Spec target: p95 delivery < 3 s, error rate < 1 %. |
 | `auth.js`         | Login/logout cycle under load — validates the session/cookie path does not become a bottleneck. |
+| `load_300.js`     | **Acceptance scenario for the 300-user target.** Ramps to 300 VUs, holds 3 min, each VU posts 1 msg / 5 s to a shared room; asserts `p(95) < 3000 ms` and error rate `< 1 %`. Requires `-e ROOM_ID=<guid>` and seeded `loadtest.{1..300}@example.com` users. |
+| `seed_users.js`   | One-shot helper — registers 300 `loadtest.*@example.com` users (idempotent; 409s are ignored). |
 
 Assertions (thresholds) are declared via shared `checks.js`.
 
@@ -22,6 +24,12 @@ Assertions (thresholds) are declared via shared `checks.js`.
 ```bash
 docker compose -f infra/docker-compose.yml up -d --build
 BASE_URL=http://localhost:8080 k6 run server/k6/scenarios/baseline.js
+
+# 300-user acceptance run (seed users, then run the load):
+BASE_URL=http://localhost:8080 k6 run server/k6/scenarios/seed_users.js
+BASE_URL=http://localhost:8080 k6 run \
+  -e ROOM_ID=<room-guid> \
+  server/k6/scenarios/load_300.js
 ```
 
 Set `BASE_URL` to point at whichever environment you want to load (the default `docker-compose.yml`

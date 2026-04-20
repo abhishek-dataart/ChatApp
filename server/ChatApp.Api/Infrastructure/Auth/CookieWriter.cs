@@ -18,17 +18,17 @@ public class CookieWriter
     public string CookieName => _opts.Name;
     public bool IsSecure => _opts.Secure;
 
-    public void Write(HttpResponse response, string token)
+    public void Write(HttpResponse response, string token, TimeSpan? maxAge = null)
     {
-        response.Cookies.Append(_opts.Name, token, BuildOptions(expireImmediately: false));
+        response.Cookies.Append(_opts.Name, token, BuildOptions(expireImmediately: false, maxAge));
     }
 
     public void Clear(HttpResponse response)
     {
-        response.Cookies.Append(_opts.Name, string.Empty, BuildOptions(expireImmediately: true));
+        response.Cookies.Append(_opts.Name, string.Empty, BuildOptions(expireImmediately: true, null));
     }
 
-    private CookieOptions BuildOptions(bool expireImmediately)
+    private CookieOptions BuildOptions(bool expireImmediately, TimeSpan? maxAge)
     {
         return new CookieOptions
         {
@@ -36,8 +36,8 @@ public class CookieWriter
             Secure = _opts.Secure,
             SameSite = ParseSameSite(_opts.SameSite),
             Path = "/",
-            Expires = expireImmediately ? DateTimeOffset.UnixEpoch : null,
-            MaxAge = expireImmediately ? TimeSpan.Zero : null
+            Expires = expireImmediately ? DateTimeOffset.UnixEpoch : (maxAge is null ? null : DateTimeOffset.UtcNow + maxAge),
+            MaxAge = expireImmediately ? TimeSpan.Zero : maxAge
         };
     }
 

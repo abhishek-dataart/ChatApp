@@ -22,6 +22,7 @@ public class AuthController : ControllerBase
     private readonly LoginRateLimiter _loginLimiter;
     private readonly ICurrentUser _current;
     private readonly ChatDbContext _db;
+    private readonly PasswordResetService _reset;
 
     public AuthController(
         AuthService auth,
@@ -29,7 +30,8 @@ public class AuthController : ControllerBase
         CookieWriter cookies,
         LoginRateLimiter loginLimiter,
         ICurrentUser current,
-        ChatDbContext db)
+        ChatDbContext db,
+        PasswordResetService reset)
     {
         _auth = auth;
         _lookup = lookup;
@@ -37,6 +39,7 @@ public class AuthController : ControllerBase
         _loginLimiter = loginLimiter;
         _current = current;
         _db = db;
+        _reset = reset;
     }
 
     [HttpPost("register")]
@@ -69,14 +72,14 @@ public class AuthController : ControllerBase
             return Problem(statusCode: StatusCodes.Status429TooManyRequests, title: "Too many login attempts.", extensions: new Dictionary<string, object?> { ["code"] = "rate_limited" });
         }
 
-        var result = await _auth.LoginAsync(body.Email, body.Password, UserAgent(), ClientIp(), ct);
+        var result = await _auth.LoginAsync(body.Email, body.Password, UserAgent(), ClientIp(), ct, body.KeepSignedIn);
         if (!result.IsSuccess)
         {
             return FromError(result.ErrorCode!, result.ErrorMessage);
         }
 
         var outcome = result.Value!;
-        _cookies.Write(Response, outcome.Token);
+        _cookies.Write(Response, outcome.Token, body.KeepSignedIn ? AuthService.PersistentSessionLifetime : null);
         WriteCsrfCookie(Response);
         return Ok(ToMe(outcome.User, outcome.SessionId));
     }
@@ -116,6 +119,35 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest body, CancellationToken ct)
+    {
+        if (!_loginLimiter.TryAcquire(ClientIp(), string.IsNullOrEmpty(body.Email) ? string.Empty : AuthValidator.NormalizeEmail(body.Email)))
+        {
+            return Problem(statusCode: StatusCodes.Status429TooManyRequests, title: "Too many attempts.", extensions: new Dictionary<string, object?> { ["code"] = "rate_limited" });
+        }
+        await _reset.RequestAsync(body.Email ?? string.Empty, ClientIp(), ct);
+        // Always 204: don't leak whether the email exists.
+        return NoContent();
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest body, CancellationToken ct)
+    {
+        var result = await _reset.ResetAsync(body.Token, body.NewPassword, ct);
+        if (!result.IsSuccess)
+        {
+            return FromError(result.ErrorCode!, result.ErrorMessage);
+        }
+        foreach (var h in result.Value!)
+        {
+            _lookup.Evict(h);
+        }
+        return NoContent();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> Me(CancellationToken ct)
@@ -135,6 +167,7 @@ public class AuthController : ControllerBase
         AuthErrors.UsernameTaken => Problem(statusCode: StatusCodes.Status409Conflict, title: "Username already taken.", extensions: Ext(code)),
         AuthErrors.InvalidCredentials => Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid email or password.", extensions: Ext(code)),
         AuthErrors.InvalidCurrentPassword => Problem(statusCode: StatusCodes.Status400BadRequest, title: "Current password is incorrect.", extensions: Ext(code)),
+        AuthErrors.InvalidResetToken => Problem(statusCode: StatusCodes.Status400BadRequest, title: "Reset link is invalid or expired.", extensions: Ext(code)),
         AuthErrors.ValidationFailed => Problem(statusCode: StatusCodes.Status400BadRequest, title: message ?? "Validation failed.", extensions: Ext(code)),
         _ => Problem(statusCode: StatusCodes.Status400BadRequest, title: message ?? code, extensions: Ext(code))
     };

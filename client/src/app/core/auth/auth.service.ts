@@ -4,9 +4,11 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ChangePasswordRequest,
+  ForgotPasswordRequest,
   LoginRequest,
   MeResponse,
   RegisterRequest,
+  ResetPasswordRequest,
 } from './auth.models';
 
 interface ApiMe {
@@ -61,6 +63,14 @@ export class AuthService {
 
   async changePassword(body: ChangePasswordRequest): Promise<void> {
     await firstValueFrom(this.http.post(`${this.base}/change-password`, body));
+  }
+
+  async forgotPassword(body: ForgotPasswordRequest): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.base}/forgot-password`, body));
+  }
+
+  async resetPassword(body: ResetPasswordRequest): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.base}/reset-password`, body));
   }
 
   patchLocal(partial: Partial<MeResponse>): void {

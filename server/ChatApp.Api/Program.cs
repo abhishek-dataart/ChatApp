@@ -171,6 +171,8 @@ public class Program
         }
 
         builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<PasswordResetService>();
+        builder.Services.AddSingleton<IPasswordResetNotifier, LogPasswordResetNotifier>();
         builder.Services.AddScoped<SessionLookupService>();
         builder.Services.AddScoped<ICurrentUser, CurrentUser>();
         builder.Services.AddScoped<ProfileService>();

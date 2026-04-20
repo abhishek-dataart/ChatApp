@@ -12,8 +12,9 @@ public class SessionQueryService
 
     public async Task<IReadOnlyList<SessionRow>> ListAsync(Guid userId, Guid currentSessionId, CancellationToken ct)
     {
+        var now = DateTimeOffset.UtcNow;
         return await _db.Sessions
-            .Where(s => s.UserId == userId && s.RevokedAt == null)
+            .Where(s => s.UserId == userId && s.RevokedAt == null && (s.ExpiresAt == null || s.ExpiresAt > now))
             .OrderByDescending(s => s.LastSeenAt)
             .Select(s => new SessionRow(
                 s.Id,

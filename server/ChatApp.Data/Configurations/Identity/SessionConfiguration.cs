@@ -17,6 +17,7 @@ public class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.Property(s => s.Ip).IsRequired().HasMaxLength(64);
         builder.Property(s => s.CreatedAt).IsRequired();
         builder.Property(s => s.LastSeenAt).IsRequired();
+        builder.Property(s => s.ExpiresAt);
 
         builder.HasIndex(s => s.CookieHash).IsUnique();
         builder.HasIndex(s => new { s.UserId, s.RevokedAt });

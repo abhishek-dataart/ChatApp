@@ -104,12 +104,15 @@ public class AuthService
         return AuthResult<RegisterOutcome>.Success(new RegisterOutcome(user, token, session.Id));
     }
 
+    public static readonly TimeSpan PersistentSessionLifetime = TimeSpan.FromDays(30);
+
     public async Task<AuthResult<LoginOutcome>> LoginAsync(
         string email,
         string password,
         string userAgent,
         string ip,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool keepSignedIn = false)
     {
         var emailNorm = string.IsNullOrEmpty(email) ? string.Empty : AuthValidator.NormalizeEmail(email);
         var user = emailNorm.Length == 0
@@ -143,7 +146,8 @@ public class AuthService
             UserAgent = Truncate(userAgent, 512),
             Ip = Truncate(ip, 64),
             CreatedAt = now,
-            LastSeenAt = now
+            LastSeenAt = now,
+            ExpiresAt = keepSignedIn ? now + PersistentSessionLifetime : null
         };
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync(ct);

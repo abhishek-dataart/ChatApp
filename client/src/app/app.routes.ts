@@ -10,6 +10,22 @@ export const routes: Routes = [
       import('./features/auth/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'forgot-password',
+    canActivate: [anonGuard],
+    loadComponent: () =>
+      import('./features/auth/forgot-password/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent,
+      ),
+  },
+  {
+    path: 'reset-password',
+    canActivate: [anonGuard],
+    loadComponent: () =>
+      import('./features/auth/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
+  },
+  {
     path: 'register',
     canActivate: [anonGuard],
     loadComponent: () =>

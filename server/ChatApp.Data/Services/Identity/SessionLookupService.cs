@@ -36,10 +36,12 @@ public class SessionLookupService
             return cached;
         }
 
+        var now = DateTimeOffset.UtcNow;
         var row = await (from s in _db.Sessions
                          join u in _db.Users on s.UserId equals u.Id
                          where s.CookieHash == cookieHash
                             && s.RevokedAt == null
+                            && (s.ExpiresAt == null || s.ExpiresAt > now)
                             && u.DeletedAt == null
                          select new { s.UserId, s.Id, u.Username })
                         .FirstOrDefaultAsync(ct);

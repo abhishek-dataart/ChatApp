@@ -9,5 +9,6 @@ public class Session
     public string Ip { get; set; } = default!;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset LastSeenAt { get; set; }
+    public DateTimeOffset? ExpiresAt { get; set; }
     public DateTimeOffset? RevokedAt { get; set; }
 }

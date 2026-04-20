@@ -36,8 +36,8 @@ export class LoginComponent {
     this.submitting.set(true);
     this.error.set(null);
     try {
-      const { email, password } = this.form.getRawValue();
-      await this.auth.login({ email, password });
+      const { email, password, keepSignedIn } = this.form.getRawValue();
+      await this.auth.login({ email, password, keepSignedIn });
       await this.router.navigateByUrl('/app');
     } catch (err) {
       if (err instanceof HttpErrorResponse) {

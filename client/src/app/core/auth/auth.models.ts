@@ -18,6 +18,16 @@ export interface RegisterRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+  keepSignedIn?: boolean;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
 }
 
 export interface ChangePasswordRequest {
