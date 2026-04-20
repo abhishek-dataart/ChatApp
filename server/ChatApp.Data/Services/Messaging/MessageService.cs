@@ -125,14 +125,6 @@ public class MessageService(
                 DisplayName = u != null ? u.DisplayName : "Deleted user",
                 AvatarPath = u != null ? u.AvatarPath : null,
                 m.Body, m.ReplyToId, m.CreatedAt, m.EditedAt,
-                ReplyToBody = m.ReplyToId != null
-                    ? db.Messages.Where(p => p.Id == m.ReplyToId && p.DeletedAt == null).Select(p => p.Body).FirstOrDefault()
-                    : null,
-                ReplyToAuthorDisplayName = m.ReplyToId != null
-                    ? db.Messages.Where(p => p.Id == m.ReplyToId && p.DeletedAt == null)
-                        .Join(db.Users, p => p.AuthorId, pu => pu.Id, (p, pu) => pu.DisplayName)
-                        .FirstOrDefault()
-                    : null,
             }).Take(limit).ToListAsync(ct);
 
         rows.Reverse();
@@ -143,13 +135,19 @@ public class MessageService(
             .ToListAsync(ct);
         var attachmentsLookup = attachmentsByMsg.ToLookup(a => a.MessageId!.Value);
 
-        var payloads = rows.Select(r => new MessagePayload(
-            r.Id, "personal", r.PersonalChatId, null, r.AuthorId,
-            r.Username, r.DisplayName,
-            r.AvatarPath is null ? null : $"/api/profile/avatar/{r.AuthorId}",
-            r.Body, r.ReplyToId, r.CreatedAt, r.EditedAt,
-            r.ReplyToBody, r.ReplyToAuthorDisplayName,
-            ToSummaries(attachmentsLookup[r.Id]))).ToList();
+        var replyLookup = await LoadReplyParentsAsync(rows.Select(r => r.ReplyToId), ct);
+
+        var payloads = rows.Select(r =>
+        {
+            var reply = r.ReplyToId is { } rid && replyLookup.TryGetValue(rid, out var rp) ? rp : default;
+            return new MessagePayload(
+                r.Id, "personal", r.PersonalChatId, null, r.AuthorId,
+                r.Username, r.DisplayName,
+                r.AvatarPath is null ? null : $"/api/profile/avatar/{r.AuthorId}",
+                r.Body, r.ReplyToId, r.CreatedAt, r.EditedAt,
+                reply.Body, reply.AuthorDisplayName,
+                ToSummaries(attachmentsLookup[r.Id]));
+        }).ToList();
 
         return (true, null, null, payloads);
     }
@@ -251,14 +249,6 @@ public class MessageService(
                 DisplayName = u != null ? u.DisplayName : "Deleted user",
                 AvatarPath = u != null ? u.AvatarPath : null,
                 m.Body, m.ReplyToId, m.CreatedAt, m.EditedAt,
-                ReplyToBody = m.ReplyToId != null
-                    ? db.Messages.Where(p => p.Id == m.ReplyToId && p.DeletedAt == null).Select(p => p.Body).FirstOrDefault()
-                    : null,
-                ReplyToAuthorDisplayName = m.ReplyToId != null
-                    ? db.Messages.Where(p => p.Id == m.ReplyToId && p.DeletedAt == null)
-                        .Join(db.Users, p => p.AuthorId, pu => pu.Id, (p, pu) => pu.DisplayName)
-                        .FirstOrDefault()
-                    : null,
             }).Take(limit).ToListAsync(ct);
 
         rows.Reverse();
@@ -269,15 +259,46 @@ public class MessageService(
             .ToListAsync(ct);
         var attachmentsLookup = attachmentsByMsg.ToLookup(a => a.MessageId!.Value);
 
-        var payloads = rows.Select(r => new MessagePayload(
-            r.Id, "room", null, r.RoomId, r.AuthorId,
-            r.Username, r.DisplayName,
-            r.AvatarPath is null ? null : $"/api/profile/avatar/{r.AuthorId}",
-            r.Body, r.ReplyToId, r.CreatedAt, r.EditedAt,
-            r.ReplyToBody, r.ReplyToAuthorDisplayName,
-            ToSummaries(attachmentsLookup[r.Id]))).ToList();
+        var replyLookup = await LoadReplyParentsAsync(rows.Select(r => r.ReplyToId), ct);
+
+        var payloads = rows.Select(r =>
+        {
+            var reply = r.ReplyToId is { } rid && replyLookup.TryGetValue(rid, out var rp) ? rp : default;
+            return new MessagePayload(
+                r.Id, "room", null, r.RoomId, r.AuthorId,
+                r.Username, r.DisplayName,
+                r.AvatarPath is null ? null : $"/api/profile/avatar/{r.AuthorId}",
+                r.Body, r.ReplyToId, r.CreatedAt, r.EditedAt,
+                reply.Body, reply.AuthorDisplayName,
+                ToSummaries(attachmentsLookup[r.Id]));
+        }).ToList();
 
         return (true, null, null, payloads);
+    }
+
+    private async Task<Dictionary<Guid, (string? Body, string? AuthorDisplayName)>> LoadReplyParentsAsync(
+        IEnumerable<Guid?> replyToIds, CancellationToken ct)
+    {
+        var parentIds = replyToIds.Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToList();
+        if (parentIds.Count == 0)
+        {
+            return new Dictionary<Guid, (string?, string?)>();
+        }
+
+        var parents = await (
+            from p in db.Messages.AsNoTracking()
+            where parentIds.Contains(p.Id) && p.DeletedAt == null
+            join pu in db.Users.AsNoTracking() on p.AuthorId equals pu.Id into pg
+            from pu in pg.DefaultIfEmpty()
+            select new
+            {
+                p.Id, p.Body,
+                AuthorDisplayName = pu != null ? pu.DisplayName : "Deleted user",
+            }).ToListAsync(ct);
+
+        return parents.ToDictionary(
+            p => p.Id,
+            p => ((string?)p.Body, (string?)p.AuthorDisplayName));
     }
 
     public async Task<(bool Ok, string? Code, string? Message, MessagePayload? Value)> EditAsync(

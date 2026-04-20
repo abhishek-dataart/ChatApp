@@ -104,45 +104,6 @@
           </label>
         </div>
 
-        <div class="theme-selector">
-          <span class="field__label">Theme</span>
-          <div class="theme-options">
-            <label class="theme-option" [class.selected]="themePreference() === 'system'">
-              <input
-                type="radio"
-                name="theme"
-                value="system"
-                [checked]="themePreference() === 'system'"
-                (change)="setTheme('system')"
-                class="theme-radio"
-              />
-              System
-            </label>
-            <label class="theme-option" [class.selected]="themePreference() === 'light'">
-              <input
-                type="radio"
-                name="theme"
-                value="light"
-                [checked]="themePreference() === 'light'"
-                (change)="setTheme('light')"
-                class="theme-radio"
-              />
-              Light
-            </label>
-            <label class="theme-option" [class.selected]="themePreference() === 'dark'">
-              <input
-                type="radio"
-                name="theme"
-                value="dark"
-                [checked]="themePreference() === 'dark'"
-                (change)="setTheme('dark')"
-                class="theme-radio"
-              />
-              Dark
-            </label>
-          </div>
-        </div>
-
         <ui-button
           type="submit"
           variant="primary"

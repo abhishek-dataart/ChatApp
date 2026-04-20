@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Serilog;
 
 namespace ChatApp.Api;
@@ -42,8 +43,18 @@ public class Program
         var conn = builder.Configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("ConnectionStrings:Default is required.");
 
+        // Explicit pool sizing for the 300-concurrent-user single-instance envelope.
+        // Only set if the connection string doesn't already specify one.
+        var csb = new NpgsqlConnectionStringBuilder(conn);
+        if (!csb.ContainsKey("Maximum Pool Size"))
+        {
+            csb.MaxPoolSize = 100;
+        }
+        var dataSource = new NpgsqlDataSourceBuilder(csb.ToString()).Build();
+        builder.Services.AddSingleton(dataSource);
+
         builder.Services.AddDbContext<ChatDbContext>(o => o
-            .UseNpgsql(conn)
+            .UseNpgsql(dataSource)
             .UseSnakeCaseNamingConvention());
 
         builder.Services.AddProblemDetails();

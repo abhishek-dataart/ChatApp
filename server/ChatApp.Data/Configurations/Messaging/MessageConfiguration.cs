@@ -17,6 +17,7 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
             .HasDatabaseName("ix_messages_personal_chat_created");
         b.HasIndex(m => new { m.RoomId, m.CreatedAt, m.Id })
             .HasDatabaseName("ix_messages_room_created");
+        b.HasIndex(m => m.AuthorId).HasDatabaseName("ix_messages_author_id");
         b.HasOne<User>().WithMany().HasForeignKey(m => m.AuthorId).OnDelete(DeleteBehavior.SetNull);
     }
 }

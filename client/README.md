@@ -37,7 +37,7 @@ src/app/
 │   ├── messaging/           # Rooms/DMs messaging, attachments, unread
 │   ├── presence/            # Presence service + activity-tracker (20 s heartbeat)
 │   ├── rooms/  social/  sessions/  profile/  users/
-│   ├── notifications/  context/  layout/  theme/
+│   ├── notifications/  context/  layout/
 │   └── ...
 ├── features/                # Feature surfaces — lazy-loaded routes
 │   ├── auth/

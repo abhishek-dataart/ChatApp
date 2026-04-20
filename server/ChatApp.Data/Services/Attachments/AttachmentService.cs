@@ -225,9 +225,15 @@ public class AttachmentService(
     public async Task PurgeOnceAsync(CancellationToken ct)
     {
         var cutoff = DateTimeOffset.UtcNow.AddMinutes(-_opts.UnlinkedTtlMinutes);
-        var orphans = await db.Attachments
+        var orphans = await db.Attachments.AsNoTracking()
             .Where(a => a.MessageId == null && a.CreatedAt < cutoff)
+            .Select(a => new { a.Id, a.StoredPath, a.ThumbPath })
             .ToListAsync(ct);
+
+        if (orphans.Count == 0)
+        {
+            return;
+        }
 
         foreach (var orphan in orphans)
         {
@@ -238,15 +244,15 @@ public class AttachmentService(
                 {
                     TryDeleteFile(Path.Combine(_opts.FilesRoot, orphan.ThumbPath));
                 }
-
-                db.Attachments.Remove(orphan);
-                await db.SaveChangesAsync(ct);
             }
             catch (Exception)
             {
-                // Log error but continue purging others
+                // best-effort file removal; DB row is purged below regardless
             }
         }
+
+        var ids = orphans.Select(o => o.Id).ToList();
+        await db.Attachments.Where(a => ids.Contains(a.Id)).ExecuteDeleteAsync(ct);
     }
 
     private async Task<bool> AuthorizeReadAsync(Guid callerId, Attachment attachment, CancellationToken ct)

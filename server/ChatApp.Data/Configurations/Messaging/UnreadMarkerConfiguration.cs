@@ -12,6 +12,9 @@ public class UnreadMarkerConfiguration : IEntityTypeConfiguration<UnreadMarker>
         b.ToTable("unread_markers");
         b.HasKey(u => new { u.UserId, u.Scope, u.ScopeId });
         b.Property(u => u.Scope).HasConversion<int>();
+        b.HasIndex(u => u.UserId)
+            .HasFilter("unread_count > 0")
+            .HasDatabaseName("ix_unread_markers_user_unread");
         b.HasOne<User>().WithMany().HasForeignKey(u => u.UserId).OnDelete(DeleteBehavior.Cascade);
     }
 }

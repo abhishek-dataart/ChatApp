@@ -74,31 +74,6 @@
   --z-toast: 300;
 }
 
-/* ─── Dark palette override ─────────────────────────────────── */
-[data-theme='dark'] {
-  --color-bg: #0a0a0b;
-  --color-bg-elevated: #141416;
-  --color-bg-sunken: #0d0d0f;
-  --color-surface: #141416;
-  --color-surface-hover: #1c1c1f;
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-strong: rgba(255, 255, 255, 0.14);
-  --color-text: #ededed;
-  --color-text-muted: #a1a1aa;
-  --color-text-subtle: #52525b;
-  --color-accent: #3b82f6;
-  --color-accent-hover: #60a5fa;
-  --color-accent-fg: #ffffff;
-  --color-danger: #ef4444;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-focus-ring: rgba(59, 130, 246, 0.45);
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.7), 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
 /* ─── Reset ─────────────────────────────────────────────────── */
 *,
 *::before,

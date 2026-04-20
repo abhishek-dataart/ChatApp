@@ -142,14 +142,24 @@ public class RoomService(
             {
                 r.Id, r.Name, r.Description, r.Visibility, r.Capacity, r.CreatedAt,
                 r.LogoPath,
-                MemberCount = db.RoomMembers.Count(m => m.RoomId == r.Id),
-                IsMember = db.RoomMembers.Any(m => m.RoomId == r.Id && m.UserId == me),
             })
             .ToListAsync(ct);
 
+        var roomIds = items.Select(i => i.Id).ToList();
+        var counts = await db.RoomMembers.AsNoTracking()
+            .Where(m => roomIds.Contains(m.RoomId))
+            .GroupBy(m => m.RoomId)
+            .Select(g => new { RoomId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.RoomId, x => x.Count, ct);
+        var mine = (await db.RoomMembers.AsNoTracking()
+            .Where(m => m.UserId == me && roomIds.Contains(m.RoomId))
+            .Select(m => m.RoomId)
+            .ToListAsync(ct)).ToHashSet();
+
         return (true, null, null, items.Select(i => new CatalogItemOutcome(
             i.Id, i.Name, i.Description, i.Visibility, i.Capacity, i.CreatedAt,
-            i.MemberCount, i.IsMember, LogoUrlFor(i.Id, i.LogoPath))).ToList());
+            counts.GetValueOrDefault(i.Id), mine.Contains(i.Id),
+            LogoUrlFor(i.Id, i.LogoPath))).ToList());
     }
 
     public async Task<List<MyRoomItemOutcome>> ListMineAsync(Guid me, CancellationToken ct = default)
@@ -165,14 +175,20 @@ public class RoomService(
             {
                 x.r.Id, x.r.Name, x.r.Description, x.r.Visibility, x.r.Capacity, x.r.CreatedAt,
                 x.r.LogoPath,
-                MemberCount = db.RoomMembers.Count(m => m.RoomId == x.r.Id),
                 x.m.Role, x.m.JoinedAt,
             })
             .ToListAsync(ct);
 
+        var roomIds = items.Select(i => i.Id).ToList();
+        var counts = await db.RoomMembers.AsNoTracking()
+            .Where(m => roomIds.Contains(m.RoomId))
+            .GroupBy(m => m.RoomId)
+            .Select(g => new { RoomId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.RoomId, x => x.Count, ct);
+
         return items.Select(i => new MyRoomItemOutcome(
             i.Id, i.Name, i.Description, i.Visibility, i.Capacity, i.CreatedAt,
-            i.MemberCount, i.Role, i.JoinedAt, LogoUrlFor(i.Id, i.LogoPath))).ToList();
+            counts.GetValueOrDefault(i.Id), i.Role, i.JoinedAt, LogoUrlFor(i.Id, i.LogoPath))).ToList();
     }
 
     public async Task<(bool Ok, string? Code, string? Message, RoomDetailOutcome? Value)> GetAsync(

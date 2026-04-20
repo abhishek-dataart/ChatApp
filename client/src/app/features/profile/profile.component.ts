@@ -5,7 +5,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ProfileService } from '../../core/profile/profile.service';
-import { ThemeService } from '../../core/theme/theme.service';
 import { UiButtonComponent } from '../../shared/ui/button/ui-button.component';
 import { UiCardComponent } from '../../shared/ui/card/ui-card.component';
 
@@ -22,11 +21,8 @@ export class ProfileComponent {
   private readonly profileService = inject(ProfileService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly themeService = inject(ThemeService);
 
   readonly user = this.auth.currentUser;
-  readonly themePreference = this.themeService.preference;
-  readonly setTheme = (p: any) => this.themeService.setPreference(p);
 
   readonly profileForm = this.fb.group({
     displayName: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(64)]],

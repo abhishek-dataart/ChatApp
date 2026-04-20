@@ -20,6 +20,7 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
         b.HasIndex(a => a.CreatedAt)
             .HasFilter("message_id IS NULL")
             .HasDatabaseName("ix_attachments_unlinked_created");
+        b.HasIndex(a => a.UploaderId).HasDatabaseName("ix_attachments_uploader_id");
         b.HasOne(a => a.Message)
             .WithMany()
             .HasForeignKey(a => a.MessageId)

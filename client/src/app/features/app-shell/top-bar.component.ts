@@ -15,13 +15,12 @@ import { FriendshipsService } from '../../core/social/friendships.service';
 import { UserSearchResult, UserSearchService } from '../../core/users/user-search.service';
 import { LayoutService } from '../../core/layout/layout.service';
 import { UiAvatarComponent } from '../../shared/ui/avatar/ui-avatar.component';
-import { ThemeToggleComponent } from './theme-toggle.component';
 
 @Component({
   selector: 'app-top-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LucideAngularModule, UiAvatarComponent, ThemeToggleComponent],
+  imports: [RouterLink, LucideAngularModule, UiAvatarComponent],
   templateUrl: './top-bar.component.html',
   styleUrl: './top-bar.component.scss',
 })

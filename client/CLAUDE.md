@@ -23,7 +23,7 @@ The API **must** be running on `:5175` for `/api` REST and `/hub` (SignalR WebSo
   - `auth/` — guard, service, models.
   - `http/` — HTTP interceptors: `credentials.interceptor`, `csrf.interceptor`, `error.interceptor`. Wire them in `app.config.ts`.
   - `signalr/` — SignalR client setup.
-  - `messaging/`, `presence/`, `rooms/`, `social/`, `sessions/`, `profile/`, `users/`, `notifications/`, `context/`, `layout/`, `theme/`.
+  - `messaging/`, `presence/`, `rooms/`, `social/`, `sessions/`, `profile/`, `users/`, `notifications/`, `context/`, `layout/`.
 - `src/app/features/` — feature surfaces (one folder each): `auth`, `app-shell`, `rooms`, `dms`, `contacts`, `sessions`, `profile`, `manage-room`.
 - `src/app/shared/` — reusable UI components and pipes.
 

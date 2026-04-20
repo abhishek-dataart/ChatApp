@@ -21,15 +21,11 @@ public sealed class ContactFanoutResolver(ChatDbContext db) : IPresenceFanoutRes
                         (f.UserIdLow == userId || f.UserIdHigh == userId))
             .Select(f => f.UserIdLow == userId ? f.UserIdHigh : f.UserIdLow);
 
-        var roomIds = db.RoomMembers
-            .AsNoTracking()
-            .Where(rm => rm.UserId == userId)
-            .Select(rm => rm.RoomId);
-
-        var roomCoMemberIds = db.RoomMembers
-            .AsNoTracking()
-            .Where(rm => roomIds.Contains(rm.RoomId) && rm.UserId != userId)
-            .Select(rm => rm.UserId);
+        var roomCoMemberIds =
+            from mine in db.RoomMembers.AsNoTracking().Where(x => x.UserId == userId)
+            join peer in db.RoomMembers.AsNoTracking() on mine.RoomId equals peer.RoomId
+            where peer.UserId != userId
+            select peer.UserId;
 
         return await friendIds
             .Union(roomCoMemberIds)
