@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1.7
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy csproj + Directory.* first to maximise layer cache on package restore.
+COPY server/Directory.Build.props server/Directory.Packages.props server/global.json ./server/
+COPY server/ChatApp.Api/ChatApp.Api.csproj         ./server/ChatApp.Api/
+COPY server/ChatApp.Domain/ChatApp.Domain.csproj   ./server/ChatApp.Domain/
+COPY server/ChatApp.Data/ChatApp.Data.csproj       ./server/ChatApp.Data/
+RUN dotnet restore ./server/ChatApp.Api/ChatApp.Api.csproj
+
+# Copy the rest and publish.
+COPY server/ ./server/
+RUN dotnet publish ./server/ChatApp.Api/ChatApp.Api.csproj \
+      -c Release -o /app/publish \
+      --no-restore \
+      /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# wget is used by the docker-compose healthcheck.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish ./
+
+# Filesystem layout for attachments (mounted as a volume in compose).
+RUN mkdir -p /var/chatapp/files
+
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "ChatApp.Api.dll"]

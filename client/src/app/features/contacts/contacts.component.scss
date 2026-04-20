@@ -1,0 +1,206 @@
+:host {
+  display: block;
+}
+
+.contacts-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Tab bar ── */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+  margin-bottom: -1px;
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &--active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+  }
+}
+
+/* ── Tab panel ── */
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Add friend form ── */
+.add-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+}
+
+.field__optional {
+  font-weight: var(--fw-normal);
+  color: var(--color-text-subtle);
+}
+
+.field__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--color-text-subtle);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+  }
+}
+
+.field__textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  resize: vertical;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--color-text-subtle);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+  }
+}
+
+/* ── Contact list rows ── */
+.contact-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.contact-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contact-row__name {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-row__sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.contact-row__note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-row__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ── DM link wrapper ── */
+.dm-link {
+  text-decoration: none;
+  display: contents;
+}
+
+/* ── Feedback ── */
+.feedback {
+  font-size: var(--text-sm);
+  margin: 0;
+
+  &--error {
+    color: var(--color-danger);
+  }
+
+  &--success {
+    color: var(--color-success);
+  }
+}

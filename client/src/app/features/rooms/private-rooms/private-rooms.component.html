@@ -1,0 +1,69 @@
+<div class="rooms-page">
+  <div class="rooms-page__header">
+    <h1 class="rooms-page__title">Invitations &amp; Private Rooms</h1>
+  </div>
+
+  <section class="rooms-section">
+    <h2 class="section-title">Pending Invitations</h2>
+    @if (incoming() === null) {
+      <ui-skeleton height="60px" />
+    } @else if (incoming()!.length === 0) {
+      <p class="empty-text">No pending invitations.</p>
+    } @else {
+      <ul class="invitation-list">
+        @for (inv of incoming()!; track inv.invitationId) {
+          <li class="invitation-row">
+            <app-room-logo [room]="inv.room" size="sm" />
+            <div class="invitation-info">
+              <span class="invitation-room">{{ inv.room.name }}</span>
+              <span class="invitation-from">Invited by {{ inv.inviter.displayName }}</span>
+              @if (inv.note) {
+                <span class="invitation-note">{{ inv.note }}</span>
+              }
+            </div>
+            <div class="invitation-actions">
+              <ui-button variant="primary" size="sm" (click)="acceptInvitation(inv.invitationId)">Accept</ui-button>
+              <ui-button variant="ghost" size="sm" (click)="declineInvitation(inv.invitationId)">Decline</ui-button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="rooms-section">
+    <h2 class="section-title">My Private Rooms</h2>
+    @if (privateRooms() === null) {
+      <div class="room-grid">
+        @for (i of [1,2,3]; track i) {
+          <ui-skeleton height="72px" />
+        }
+      </div>
+    } @else if (privateRooms()!.length === 0) {
+      <ui-empty-state heading="No private rooms" subtext="Accept an invitation to join one." />
+    } @else {
+      <div class="room-grid">
+        @for (room of privateRooms()!; track room.id) {
+          <a class="room-card" [routerLink]="['/app/rooms', room.id]">
+            <app-room-logo [room]="room" size="sm" />
+            <div class="room-card__icon">
+              <lucide-icon [img]="LockIcon" [size]="16" />
+            </div>
+            <div class="room-card__info">
+              <div class="room-card__name">
+                {{ room.name }}
+                @if (unreadFor(room.id) > 0) {
+                  <ui-badge variant="accent" [count]="unreadFor(room.id)" />
+                }
+              </div>
+              <div class="room-card__meta">
+                <span class="room-card__role">{{ room.role }}</span>
+                <span class="room-card__count">{{ room.memberCount }} / {{ room.capacity }}</span>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </section>
+</div>

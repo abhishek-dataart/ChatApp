@@ -1,0 +1,15 @@
+# Dev-only overrides.
+# Binds extra ports for direct access to the API and Postgres while
+# developing outside the compose network. Loaded automatically by
+# `docker compose up` when present alongside docker-compose.yml.
+
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5175:8080"

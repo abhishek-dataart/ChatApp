@@ -1,0 +1,73 @@
+@if (messages.length === 0) {
+  <p class="empty">No messages yet. Say hello!</p>
+}
+<cdk-virtual-scroll-viewport [itemSize]="itemSize" class="message-viewport"
+    (scrolledIndexChange)="onScrolledIndexChange($event)">
+  <div *cdkVirtualFor="let msg of messages; trackBy: trackById"
+       class="message" [class.message--mine]="isMine(msg.authorId)">
+    <ui-avatar [src]="msg.authorAvatarUrl ?? undefined" [name]="msg.authorDisplayName" size="sm" class="message__avatar" />
+    <div class="message__content">
+      @if (msg.replyToId) {
+        <div class="reply-quote">
+          @if (msg.replyToBody) {
+            <span class="reply-quote__author">{{ msg.replyToAuthorDisplayName }}</span>
+            <span class="reply-quote__body">{{ msg.replyToBody }}</span>
+          } @else {
+            <span class="reply-quote__deleted">Original message deleted</span>
+          }
+        </div>
+      }
+      <div class="message__meta">
+        <span class="message__author">{{ msg.authorDisplayName }}</span>
+        <span class="message__time">{{ msg.createdAt | date: 'shortTime' }}</span>
+        @if (msg.editedAt) { <span class="message__edited">edited</span> }
+      </div>
+      @if (editingId() === msg.id) {
+        <div class="edit-mode">
+          <textarea #editArea [value]="editBody()" (input)="editBody.set(editArea.value)" rows="2"></textarea>
+          <div class="edit-actions">
+            <ui-button variant="primary" size="sm" (click)="saveEdit(msg.id)">Save</ui-button>
+            <ui-button variant="ghost" size="sm" (click)="cancelEdit()">Cancel</ui-button>
+          </div>
+        </div>
+      } @else {
+        <div class="message__body">{{ msg.body }}</div>
+        @if (msg.attachments && msg.attachments.length > 0) {
+          <div class="attachments">
+            @for (a of msg.attachments; track a.id) {
+              @if (a.kind === 'image' && a.thumbUrl) {
+                <div class="attachment attachment--image">
+                  <img class="attachment__thumb" [src]="a.thumbUrl" [alt]="a.originalFilename"
+                       (click)="openAttachment(a.downloadUrl)" />
+                  @if (a.comment) { <p class="attachment__comment">{{ a.comment }}</p> }
+                </div>
+              } @else {
+                <div class="attachment attachment--file">
+                  <div class="attachment__info">
+                    <a class="attachment__filename" [href]="a.downloadUrl" [download]="a.originalFilename">{{ a.originalFilename }}</a>
+                    <span class="attachment__size">{{ formatSize(a.sizeBytes) }}</span>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        }
+      }
+    </div>
+    <div class="message__actions">
+      <button type="button" class="action-btn" (click)="replyTo.emit(msg)" title="Reply">
+        <lucide-icon [img]="ReplyIcon" [size]="14" />
+      </button>
+      @if (isMine(msg.authorId)) {
+        <button type="button" class="action-btn" (click)="startEdit(msg)" title="Edit">
+          <lucide-icon [img]="EditIcon" [size]="14" />
+        </button>
+      }
+      @if (canDelete(msg)) {
+        <button type="button" class="action-btn action-btn--delete" (click)="confirmDelete(msg.id)" title="Delete">
+          <lucide-icon [img]="DeleteIcon" [size]="14" />
+        </button>
+      }
+    </div>
+  </div>
+</cdk-virtual-scroll-viewport>

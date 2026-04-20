@@ -1,0 +1,33 @@
+@if (loading()) {
+  <p class="loading">Loading...</p>
+} @else if (error()) {
+  <p class="error">{{ error() }}</p>
+} @else if (items().length === 0) {
+  <p class="empty">No moderation actions yet.</p>
+} @else {
+  <ul class="audit-list">
+    @for (entry of items(); track entry.id) {
+      <li class="audit-row">
+        <span class="actor">{{ entry.actor.displayName }}</span>
+        <span class="action action--{{ entry.action }}">{{ entry.action }}</span>
+        @if (entry.target) {
+          <span class="target">{{ entry.target.displayName }}</span>
+        } @else {
+          <span class="target target--none">—</span>
+        }
+        @if (renderDetail(entry.detail)) {
+          <span class="detail">{{ renderDetail(entry.detail) }}</span>
+        }
+        <span class="date">{{ entry.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
+      </li>
+    }
+  </ul>
+
+  @if (nextBefore()) {
+    <button type="button" class="btn-load-more"
+      [disabled]="loadingMore()"
+      (click)="loadMore()">
+      {{ loadingMore() ? 'Loading...' : 'Load older' }}
+    </button>
+  }
+}

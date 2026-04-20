@@ -1,0 +1,98 @@
+.ban-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ban-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.ban-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ban-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+
+  &--placeholder {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-surface-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+}
+
+.display-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.username {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.ban-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-subtle);
+}
+
+.btn-unban {
+  padding: 0.35rem 0.75rem;
+  background: var(--color-success);
+  color: var(--color-accent-fg);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: opacity var(--transition-fast);
+
+  &:hover:not(:disabled) { opacity: 1; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.loading, .empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-subtle);
+}
+
+.error {
+  color: var(--color-danger);
+  padding: 1rem;
+}

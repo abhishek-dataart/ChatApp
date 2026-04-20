@@ -1,0 +1,139 @@
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dialog);
+  width: 420px;
+  max-width: calc(100vw - 2rem);
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.field {
+  margin-bottom: 1rem;
+
+  label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: var(--color-text-muted);
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    background: var(--color-bg-sunken);
+    color: var(--color-text);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px var(--color-focus-ring);
+    }
+  }
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--color-text-subtle);
+  font-size: 0.8rem;
+}
+
+.field-error,
+.general-error {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+}
+
+.general-error {
+  margin-bottom: 0.75rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.btn-cancel {
+  padding: 0.45rem 1rem;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--color-border);
+  }
+}
+
+.btn-submit {
+  padding: 0.45rem 1.25rem;
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

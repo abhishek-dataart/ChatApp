@@ -1,0 +1,5 @@
+<div class="toast-stack" aria-live="polite" aria-atomic="false">
+  @for (toast of toasts(); track toast.id) {
+    <ui-toast [toast]="toast" (dismiss)="dismiss($event)" />
+  }
+</div>

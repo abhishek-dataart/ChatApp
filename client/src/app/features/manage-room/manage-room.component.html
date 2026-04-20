@@ -1,0 +1,32 @@
+@if (room(); as r) {
+  <div class="manage-page">
+    <div class="manage-header">
+      <h1 class="manage-header__title">Manage: {{ r.name }}</h1>
+      <a [routerLink]="['/app/rooms', r.id]" class="btn-back">← Back to room</a>
+    </div>
+    <ui-tabs>
+      <ui-tab tabId="members" label="Members">
+        <app-members-tab [room]="r" [roomId]="roomId" (roomUpdated)="onRoomUpdated()" />
+      </ui-tab>
+      <ui-tab tabId="admins" label="Admins">
+        <app-admins-tab [room]="r" [roomId]="roomId" (roomUpdated)="onRoomUpdated()" />
+      </ui-tab>
+      <ui-tab tabId="bans" label="Banned">
+        <app-bans-tab [roomId]="roomId" />
+      </ui-tab>
+      <ui-tab tabId="invitations" label="Invitations">
+        <app-invitations-tab [room]="r" [roomId]="roomId" />
+      </ui-tab>
+      <ui-tab tabId="settings" label="Settings">
+        <app-settings-tab [room]="r" [roomId]="roomId" [isOwner]="isOwner()" (roomUpdated)="onRoomUpdated()" />
+      </ui-tab>
+      <ui-tab tabId="audit" label="Audit">
+        <app-audit-tab [roomId]="roomId" />
+      </ui-tab>
+    </ui-tabs>
+  </div>
+} @else if (loading()) {
+  <div class="manage-loading">
+    <ui-skeleton height="32px" width="200px" />
+  </div>
+}

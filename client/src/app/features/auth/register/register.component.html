@@ -1,0 +1,106 @@
+<div class="auth-layout">
+  <div class="auth-brand">
+    <div class="auth-brand__logo">C</div>
+    <h1 class="auth-brand__title">ChatApp</h1>
+    <p class="auth-brand__tagline">Connect. Collaborate. Chat.</p>
+  </div>
+
+  <div class="auth-card-wrapper">
+    <ui-card padding="lg" class="auth-card">
+      <h2 class="auth-card__heading">Create your account</h2>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="auth-form">
+
+        <div class="field">
+          <label for="email" class="field__label">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            class="field__input"
+            placeholder="you@example.com"
+          />
+          @if (form.get('email')?.touched && form.get('email')?.errors?.['required']) {
+            <small class="field__error">Email is required.</small>
+          } @else if (form.get('email')?.touched && form.get('email')?.errors?.['email']) {
+            <small class="field__error">Enter a valid email address.</small>
+          } @else if (fieldErrors()['email']) {
+            <small class="field__error">{{ fieldErrors()['email'] }}</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="username" class="field__label">Username</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            autocomplete="username"
+            class="field__input"
+            placeholder="lowercase_name123"
+          />
+          <small class="field__hint">Lowercase letters, digits, underscore. 3–20 chars.</small>
+          @if (form.get('username')?.touched && form.get('username')?.errors?.['required']) {
+            <small class="field__error">Username is required.</small>
+          } @else if (form.get('username')?.touched && form.get('username')?.errors?.['pattern']) {
+            <small class="field__error">Only lowercase letters, digits, and underscores (3–20 chars).</small>
+          } @else if (fieldErrors()['username']) {
+            <small class="field__error">{{ fieldErrors()['username'] }}</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="displayName" class="field__label">Display name</label>
+          <input
+            id="displayName"
+            type="text"
+            formControlName="displayName"
+            autocomplete="name"
+            class="field__input"
+            placeholder="Your name"
+          />
+          @if (form.get('displayName')?.touched && form.get('displayName')?.errors?.['required']) {
+            <small class="field__error">Display name is required.</small>
+          } @else if (form.get('displayName')?.touched && form.get('displayName')?.errors?.['maxlength']) {
+            <small class="field__error">Display name must be 64 characters or fewer.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="password" class="field__label">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            class="field__input"
+            placeholder="At least 10 characters"
+          />
+          <small class="field__hint">At least 10 characters, with a letter and a digit.</small>
+          @if (form.get('password')?.touched && form.get('password')?.errors?.['required']) {
+            <small class="field__error">Password is required.</small>
+          } @else if (form.get('password')?.touched && form.get('password')?.errors) {
+            <small class="field__error">Password must be at least 10 characters and contain a letter and a digit.</small>
+          }
+        </div>
+
+        @if (error()) {
+          <p class="auth-error" role="alert">{{ error() }}</p>
+        }
+
+        <ui-button
+          type="submit"
+          variant="primary"
+          size="md"
+          [loading]="submitting()"
+          [disabled]="submitting()"
+          style="width: 100%"
+        >
+          Create account
+        </ui-button>
+      </form>
+
+      <p class="auth-alt">Already have an account? <a routerLink="/login">Sign in</a></p>
+    </ui-card>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+:host {
+  display: inline-flex;
+}
+
+.avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.avatar-img,
+.avatar-initials {
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-initials {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  user-select: none;
+}
+
+:host.size-sm {
+  .avatar-img,
+  .avatar-initials {
+    width: 28px;
+    height: 28px;
+    font-size: var(--text-xs);
+  }
+}
+
+:host.size-md {
+  .avatar-img,
+  .avatar-initials {
+    width: 36px;
+    height: 36px;
+    font-size: var(--text-sm);
+  }
+}
+
+:host.size-lg {
+  .avatar-img,
+  .avatar-initials {
+    width: 48px;
+    height: 48px;
+    font-size: var(--text-md, 1rem);
+  }
+}
+
+.presence-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  flex-shrink: 0;
+
+  &.presence-online {
+    background: var(--presence-online);
+  }
+
+  &.presence-afk {
+    background: var(--presence-afk);
+  }
+
+  &.presence-offline {
+    background: var(--presence-offline);
+  }
+}

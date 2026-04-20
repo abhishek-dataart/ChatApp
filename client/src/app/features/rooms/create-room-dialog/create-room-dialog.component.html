@@ -1,0 +1,100 @@
+<div class="dialog-backdrop" (click)="closed.emit()">
+  <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <div class="dialog__header">
+      <h2 id="dialog-title">Create Room</h2>
+      <button type="button" class="btn-close" (click)="closed.emit()" aria-label="Close">×</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field">
+        <label for="cr-name">Name *</label>
+        <input
+          id="cr-name"
+          formControlName="name"
+          type="text"
+          placeholder="e.g. general"
+          maxlength="40"
+          autocomplete="off"
+        />
+        @if (fieldErrors()['name']) {
+          <p class="field-error">{{ fieldErrors()['name'] }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="cr-description">Description *</label>
+        <textarea
+          id="cr-description"
+          formControlName="description"
+          rows="3"
+          maxlength="200"
+          placeholder="What is this room about?"
+        ></textarea>
+        @if (fieldErrors()['description']) {
+          <p class="field-error">{{ fieldErrors()['description'] }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label>Visibility</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="visibility" value="public" />
+            Public — anyone can join
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="visibility" value="private" />
+            Private — invite only
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="cr-logo">Logo <span class="optional">(optional, max 1 MB)</span></label>
+        <div class="logo-picker">
+          @if (logoPreview()) {
+            <img class="logo-preview" [src]="logoPreview()!" alt="Logo preview" />
+          }
+          <input
+            id="cr-logo"
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp"
+            (change)="onLogoChange($event)"
+          />
+          @if (logoFile()) {
+            <button type="button" class="btn-cancel" (click)="clearLogo()">Remove</button>
+          }
+        </div>
+        @if (logoWarning()) {
+          <p class="field-error">{{ logoWarning() }}</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="cr-capacity">Capacity <span class="optional">(optional, max 1,000)</span></label>
+        <input
+          id="cr-capacity"
+          formControlName="capacity"
+          type="number"
+          min="2"
+          max="1000"
+          placeholder="1000"
+        />
+        @if (fieldErrors()['capacity']) {
+          <p class="field-error">{{ fieldErrors()['capacity'] }}</p>
+        }
+      </div>
+
+      @if (generalError()) {
+        <p class="error">{{ generalError() }}</p>
+      }
+
+      <div class="dialog__actions">
+        <button type="button" class="btn-cancel" (click)="closed.emit()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="submitting() || form.invalid">
+          {{ submitting() ? 'Creating...' : 'Create Room' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

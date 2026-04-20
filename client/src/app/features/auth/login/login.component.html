@@ -1,0 +1,65 @@
+<div class="auth-layout">
+  <div class="auth-brand">
+    <div class="auth-brand__logo">C</div>
+    <h1 class="auth-brand__title">ChatApp</h1>
+    <p class="auth-brand__tagline">Connect. Collaborate. Chat.</p>
+  </div>
+
+  <div class="auth-card-wrapper">
+    <ui-card padding="lg" class="auth-card">
+      <h2 class="auth-card__heading">Sign in</h2>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="auth-form">
+        <div class="field">
+          <label for="email" class="field__label">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            [class.field__input--invalid]="form.controls.email.touched && form.controls.email.invalid"
+            class="field__input"
+            placeholder="you@example.com"
+          />
+          @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+            <p class="field__error" role="alert">Email is required.</p>
+          } @else if (form.controls.email.touched && form.controls.email.hasError('email')) {
+            <p class="field__error" role="alert">Enter a valid email address.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="password" class="field__label">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+            [class.field__input--invalid]="form.controls.password.touched && form.controls.password.invalid"
+            class="field__input"
+            placeholder="Your password"
+          />
+          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+            <p class="field__error" role="alert">Password is required.</p>
+          }
+        </div>
+
+        @if (error()) {
+          <p class="auth-error" role="alert">{{ error() }}</p>
+        }
+
+        <ui-button
+          type="submit"
+          variant="primary"
+          size="md"
+          [loading]="submitting()"
+          [disabled]="submitting() || (form.invalid && form.touched)"
+          style="width: 100%"
+        >
+          Sign in
+        </ui-button>
+      </form>
+
+      <p class="auth-alt">No account? <a routerLink="/register">Create one</a></p>
+    </ui-card>
+  </div>
+</div>

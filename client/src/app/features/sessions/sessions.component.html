@@ -1,0 +1,61 @@
+<div class="sessions-page">
+  <div class="sessions-header">
+    <h1 class="sessions-title">Active sessions</h1>
+    @if (sessions().length > 1) {
+      <ui-button
+        variant="danger"
+        size="sm"
+        (click)="revokeOthers()"
+        [loading]="revoking() === 'others'"
+        [disabled]="revoking() !== null"
+      >
+        Revoke all other sessions
+      </ui-button>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="sessions-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <div class="sessions-list">
+      <ui-skeleton style="height: 72px; border-radius: var(--radius-md);" />
+      <ui-skeleton style="height: 72px; border-radius: var(--radius-md);" />
+      <ui-skeleton style="height: 72px; border-radius: var(--radius-md);" />
+    </div>
+  } @else {
+    <div class="sessions-list">
+      @for (session of sessions(); track session.id) {
+        <ui-card padding="md" class="session-card" [class.session-card--current]="session.isCurrent">
+          <div class="session-row">
+            <div class="session-info">
+              <div class="session-ua">
+                <span class="session-ua__text">{{ session.userAgent || 'Unknown browser' }}</span>
+                @if (session.isCurrent) {
+                  <ui-badge variant="accent">This session</ui-badge>
+                }
+              </div>
+              <div class="session-meta">
+                <span>{{ session.ip }}</span>
+                <span class="sep" aria-hidden="true">·</span>
+                <span>Last seen {{ session.lastSeenAt | date:'medium' }}</span>
+                <span class="sep" aria-hidden="true">·</span>
+                <span>Created {{ session.createdAt | date:'mediumDate' }}</span>
+              </div>
+            </div>
+            <ui-button
+              variant="danger"
+              size="sm"
+              (click)="revoke(session.id)"
+              [loading]="revoking() === session.id"
+              [disabled]="revoking() !== null"
+            >
+              {{ session.isCurrent ? 'Sign out' : 'Revoke' }}
+            </ui-button>
+          </div>
+        </ui-card>
+      }
+    </div>
+  }
+</div>

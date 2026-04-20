@@ -1,0 +1,35 @@
+<div class="invitations-section">
+  <div class="invitations-header">
+    <button type="button" class="btn-invite" (click)="openInviteDialog()">Invite User</button>
+  </div>
+
+  @if (loadingPending()) {
+    <p class="loading">Loading...</p>
+  } @else if ((pendingInvitations()?.length ?? 0) === 0) {
+    <p class="empty">No pending invitations.</p>
+  } @else {
+    <ul class="pending-list">
+      @for (inv of pendingInvitations()!; track inv.invitationId) {
+        <li class="pending-row">
+          <div class="pending-info">
+            <span class="display-name">{{ inv.invitee.displayName }}</span>
+            <span class="username"> &#64;{{ inv.invitee.username }}</span>
+            <span class="invited-by">invited by {{ inv.inviter.displayName }}</span>
+          </div>
+          <button type="button" class="btn-revoke" (click)="revokeInvitation(inv.invitationId)">
+            Revoke
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+@if (showInviteDialog()) {
+  <app-invite-user-dialog
+    [roomId]="room.id"
+    [roomName]="room.name"
+    (closed)="closeInviteDialog()"
+    (invited)="onInvited($event)"
+  />
+}

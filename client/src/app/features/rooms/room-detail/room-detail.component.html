@@ -1,0 +1,62 @@
+@if (loading()) {
+  <div class="room-loading">
+    <ui-skeleton height="24px" width="200px" />
+    <ui-skeleton height="16px" width="120px" />
+  </div>
+} @else if (error() && !room()) {
+  <p class="error-state">{{ error() }}</p>
+} @else if (room()) {
+  @let r = room()!;
+  <div class="room-detail">
+    <header class="room-header">
+      <div class="room-header__left">
+        <app-room-logo [room]="r" size="md" />
+        @if (r.visibility === 'public') {
+          <lucide-icon [img]="HashIcon" [size]="18" class="room-icon" />
+        } @else {
+          <lucide-icon [img]="LockIcon" [size]="18" class="room-icon" />
+        }
+        <h1 class="room-header__name">{{ r.name }}</h1>
+        <ui-badge [variant]="r.visibility === 'public' ? 'success' : 'warning'">{{ r.visibility }}</ui-badge>
+        <span class="room-header__count">{{ r.memberCount }} / {{ r.capacity }}</span>
+      </div>
+      <div class="room-header__actions">
+        @if (error()) {
+          <span class="error-inline">{{ error() }}</span>
+        }
+        <ui-button variant="ghost" size="sm" [disabled]="leaving() || isOwner" (click)="leave()">
+          {{ leaving() ? 'Leaving…' : 'Leave' }}
+        </ui-button>
+        @if (isAdminOrOwner) {
+          <ui-button variant="secondary" size="sm" (click)="navigateToManage()">
+            <lucide-icon [img]="SettingsIcon" [size]="14" /> Manage
+          </ui-button>
+        }
+      </div>
+    </header>
+    @if (isAdminOrOwner && capacityNearFull()) {
+      <div class="capacity-banner" [class.capacity-banner--full]="capacityFull()">
+        @if (capacityFull()) { Room is full — new joins will be rejected. }
+        @else { Room is at {{ capacityPercent() }}% capacity. }
+      </div>
+    }
+    <div class="room-chat">
+      <app-message-list
+        [messages]="roomMessaging.messages()"
+        [currentUserId]="currentUserId"
+        [isAdminOrOwner]="isAdminOrOwner"
+        [isLoadingOlder]="roomMessaging.isLoadingOlder()"
+        (editMessage)="onEditMessage($event)"
+        (deleteMessage)="onDeleteMessage($event)"
+        (replyTo)="onReplyTo($event)"
+        (loadOlder)="onLoadOlder()"
+      />
+      <app-message-composer
+        [disabled]="sending()"
+        [replyingTo]="replyingTo()"
+        (send)="onSend($event)"
+        (cancelReply)="onCancelReply()"
+      />
+    </div>
+  </div>
+}

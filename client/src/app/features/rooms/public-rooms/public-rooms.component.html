@@ -1,0 +1,45 @@
+<div class="rooms-page">
+  <div class="rooms-page__header">
+    <h1 class="rooms-page__title">Public Rooms</h1>
+    <ui-button variant="primary" size="md" (click)="showCreate.set(true)">New Room</ui-button>
+  </div>
+  <div class="rooms-search">
+    <input type="search" class="search-input" placeholder="Search rooms…" [value]="searchQuery()" (input)="onSearchInput($event)" />
+  </div>
+  @if (error()) { <p class="error">{{ error() }}</p> }
+  @if (catalog() === null) {
+    <div class="room-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <ui-card><ui-skeleton height="120px" /></ui-card>
+      }
+    </div>
+  } @else if (catalog()!.length === 0) {
+    <ui-empty-state heading="No public rooms" subtext="Be the first to create one." />
+  } @else {
+    <div class="room-grid">
+      @for (room of catalog(); track room.id) {
+        @if (room.visibility === 'public') {
+          <ui-card class="room-card">
+            <div class="room-card__header">
+              <app-room-logo [room]="room" size="sm" />
+              <lucide-icon [img]="HashIcon" [size]="16" class="room-icon" />
+              <span class="room-card__name">{{ room.name }}</span>
+            </div>
+            <p class="room-card__desc">{{ room.description }}</p>
+            <div class="room-card__footer">
+              <span class="room-card__count">{{ room.memberCount }} members</span>
+              @if (room.isMember) {
+                <a class="btn-open" [routerLink]="['/app/rooms', room.id]">Open</a>
+              } @else {
+                <ui-button variant="primary" size="sm" [disabled]="joiningId() === room.id" [loading]="joiningId() === room.id" (click)="join(room.id)">Join</ui-button>
+              }
+            </div>
+          </ui-card>
+        }
+      }
+    </div>
+  }
+</div>
+@if (showCreate()) {
+  <app-create-room-dialog (closed)="showCreate.set(false)" (roomCreated)="onRoomCreated($event)" />
+}

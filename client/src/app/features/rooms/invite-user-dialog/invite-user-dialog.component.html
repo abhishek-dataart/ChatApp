@@ -1,0 +1,48 @@
+<div class="dialog-backdrop" (click)="closed.emit()"></div>
+<div class="dialog">
+  <div class="dialog-header">
+    <h2>Invite to {{ roomName }}</h2>
+    <button class="btn-close" type="button" (click)="closed.emit()" aria-label="Close">&times;</button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label for="inv-username">Username</label>
+      <input
+        id="inv-username"
+        formControlName="username"
+        type="text"
+        placeholder="Enter username"
+        autocomplete="off"
+      />
+      @if (fieldErrors()['username']) {
+        <p class="field-error">{{ fieldErrors()['username'] }}</p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="inv-note">Note <span class="optional">(optional, max 200 chars)</span></label>
+      <textarea
+        id="inv-note"
+        formControlName="note"
+        rows="3"
+        maxlength="200"
+        placeholder="Add a short note..."
+      ></textarea>
+      @if (fieldErrors()['note']) {
+        <p class="field-error">{{ fieldErrors()['note'] }}</p>
+      }
+    </div>
+
+    @if (generalError()) {
+      <p class="general-error">{{ generalError() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-cancel" (click)="closed.emit()">Cancel</button>
+      <button type="submit" class="btn-submit" [disabled]="submitting() || form.invalid">
+        {{ submitting() ? 'Sending...' : 'Send Invitation' }}
+      </button>
+    </div>
+  </form>
+</div>

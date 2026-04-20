@@ -1,0 +1,193 @@
+<div class="context-panel">
+  <div class="context-panel__header">
+    <span class="context-panel__title">Context</span>
+  </div>
+
+  @if (content().type === 'room') {
+    @if (room(); as r) {
+      <div class="context-panel__body context-panel__body--room">
+        <div class="context-panel__room-header">
+          <app-room-logo [room]="r" size="lg" />
+          <div class="context-panel__room-heading">
+            <div class="context-panel__room-name-row">
+              <lucide-icon
+                [img]="r.visibility === 'private' ? LockIcon : HashIcon"
+                size="14"
+                class="context-panel__room-icon"
+              />
+              <span class="context-panel__name">{{ r.name }}</span>
+            </div>
+            <p class="context-panel__muted">
+              {{ r.memberCount }} / {{ r.capacity }} members
+            </p>
+          </div>
+        </div>
+
+        @if (r.description) {
+          <p class="context-panel__description">{{ r.description }}</p>
+        }
+
+        @if (capacityNearFull()) {
+          <p class="context-panel__warn">Room is {{ capacityPercent() }}% full</p>
+        }
+
+        @if (owner(); as o) {
+          <div class="context-panel__section">
+            <p class="context-panel__label">Owner</p>
+            <div class="context-panel__member">
+              <div class="context-panel__avatar-wrap context-panel__avatar-wrap--sm">
+                <ui-avatar
+                  [name]="o.displayName || o.username"
+                  [src]="o.avatarUrl ?? undefined"
+                  size="sm"
+                />
+                <ui-presence-dot
+                  class="context-panel__presence context-panel__presence--sm"
+                  [status]="o.id === currentUserId() ? 'online' : presence.stateOf(o.id)()"
+                />
+              </div>
+              <div class="context-panel__member-text">
+                <span class="context-panel__member-name">
+                  {{ o.displayName || o.username }}
+                  @if (o.id === currentUserId()) {
+                    <span class="context-panel__you">(you)</span>
+                  }
+                </span>
+                <span class="context-panel__muted">&#64;{{ o.username }}</span>
+              </div>
+              <ui-badge variant="accent">Owner</ui-badge>
+            </div>
+          </div>
+        }
+
+        @if (admins().length > 0) {
+          <div class="context-panel__section">
+            <p class="context-panel__label">Admins ({{ admins().length }})</p>
+            @for (a of admins(); track a.user.id) {
+              <div class="context-panel__member">
+                <div class="context-panel__avatar-wrap context-panel__avatar-wrap--sm">
+                  <ui-avatar
+                    [name]="a.user.displayName || a.user.username"
+                    [src]="a.user.avatarUrl ?? undefined"
+                    size="sm"
+                  />
+                  <ui-presence-dot
+                    class="context-panel__presence context-panel__presence--sm"
+                    [status]="a.user.id === currentUserId() ? 'online' : presence.stateOf(a.user.id)()"
+                  />
+                </div>
+                <div class="context-panel__member-text">
+                  <span class="context-panel__member-name">
+                    {{ a.user.displayName || a.user.username }}
+                    @if (a.user.id === currentUserId()) {
+                      <span class="context-panel__you">(you)</span>
+                    }
+                  </span>
+                  <span class="context-panel__muted">&#64;{{ a.user.username }}</span>
+                </div>
+                <ui-badge variant="default">Admin</ui-badge>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="context-panel__section context-panel__section--members">
+          <p class="context-panel__label">Members ({{ regularMembers().length }})</p>
+          @if (regularMembers().length === 0) {
+            <p class="context-panel__muted">No other members yet.</p>
+          } @else {
+            <div class="context-panel__member-list">
+              @for (m of regularMembers(); track m.user.id) {
+                <div class="context-panel__member">
+                  <div class="context-panel__avatar-wrap context-panel__avatar-wrap--sm">
+                    <ui-avatar
+                      [name]="m.user.displayName || m.user.username"
+                      [src]="m.user.avatarUrl ?? undefined"
+                      size="sm"
+                    />
+                    <ui-presence-dot
+                      class="context-panel__presence context-panel__presence--sm"
+                      [status]="m.user.id === currentUserId() ? 'online' : presence.stateOf(m.user.id)()"
+                    />
+                  </div>
+                  <div class="context-panel__member-text">
+                    <span class="context-panel__member-name">
+                      {{ m.user.displayName || m.user.username }}
+                      @if (m.user.id === currentUserId()) {
+                        <span class="context-panel__you">(you)</span>
+                      }
+                    </span>
+                    <span class="context-panel__muted">&#64;{{ m.user.username }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (canManage()) {
+          <div class="context-panel__actions">
+            <ui-button variant="secondary" size="sm" (click)="openManage()">
+              <lucide-icon [img]="SettingsIcon" size="14" />
+              Manage room
+            </ui-button>
+          </div>
+        }
+      </div>
+    } @else if (roomLoading()) {
+      <div class="context-panel__body">
+        <ui-skeleton height="64px" />
+        <ui-skeleton height="16px" />
+        <ui-skeleton height="16px" />
+        <ui-skeleton height="40px" />
+        <ui-skeleton height="40px" />
+      </div>
+    } @else {
+      <div class="context-panel__empty">
+        <p class="context-panel__muted">Unable to load room.</p>
+      </div>
+    }
+  } @else if (content().type === 'dm') {
+    <div class="context-panel__body">
+      @if (dmPartner(); as friend) {
+        <div class="context-panel__profile">
+          <div class="context-panel__avatar-wrap">
+            <ui-avatar
+              [name]="friend.user.displayName || friend.user.username"
+              [src]="friend.user.avatarUrl ?? undefined"
+              size="lg"
+            />
+            <ui-presence-dot
+              class="context-panel__presence"
+              [status]="presence.stateOf(friend.user.id)()"
+            />
+          </div>
+          <p class="context-panel__name">{{ friend.user.displayName || friend.user.username }}</p>
+          <p class="context-panel__muted">&#64;{{ friend.user.username }}</p>
+        </div>
+
+        <div class="context-panel__actions">
+          <p class="context-panel__label">Manage</p>
+          <ui-button variant="secondary" size="sm" [disabled]="busy()" (click)="unfriend()">
+            Unfriend
+          </ui-button>
+          <ui-button variant="danger" size="sm" [disabled]="busy()" (click)="block()">
+            Block user
+          </ui-button>
+        </div>
+      } @else {
+        <p class="context-panel__label">Direct message</p>
+        <p class="context-panel__muted">No profile info available.</p>
+        <div class="context-panel__actions">
+          <ui-button variant="danger" size="sm" [disabled]="busy()" (click)="block()">
+            Block user
+          </ui-button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="context-panel__empty">
+      <p class="context-panel__muted">Select a room or DM to see context</p>
+    </div>
+  }
+</div>

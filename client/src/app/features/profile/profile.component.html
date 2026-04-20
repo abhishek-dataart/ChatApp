@@ -1,0 +1,246 @@
+@if (user(); as u) {
+  <div class="profile-page">
+    <h1 class="profile-page__title">Profile</h1>
+
+    <!-- Account info -->
+    <ui-card padding="md" class="profile-card">
+      <h2 class="card-heading">Account</h2>
+      <div class="field">
+        <span class="field__label">Email</span>
+        <span class="field__readonly">{{ u.email }}</span>
+      </div>
+      <div class="field">
+        <span class="field__label">Username</span>
+        <span class="field__readonly">&#64;{{ u.username }}</span>
+      </div>
+    </ui-card>
+
+    <!-- Avatar -->
+    <ui-card padding="md" class="profile-card">
+      <h2 class="card-heading">Avatar</h2>
+      <div class="avatar-row">
+        <div class="avatar-circle">
+          @if (u.avatarUrl) {
+            <img [src]="u.avatarUrl" alt="Avatar" class="avatar-circle__img" />
+          } @else {
+            <span class="avatar-circle__initials">{{ u.displayName[0].toUpperCase() }}</span>
+          }
+        </div>
+        <div class="avatar-actions">
+          <label class="avatar-upload-label" [class.disabled]="savingAvatar()">
+            <ui-button
+              variant="secondary"
+              size="sm"
+              [loading]="savingAvatar()"
+              [disabled]="savingAvatar()"
+              type="button"
+            >
+              {{ savingAvatar() ? 'Uploading…' : 'Upload photo' }}
+            </ui-button>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              (change)="onAvatarChange($event)"
+              [disabled]="savingAvatar()"
+              class="avatar-file-input"
+            />
+          </label>
+          @if (u.avatarUrl) {
+            <ui-button
+              variant="danger"
+              size="sm"
+              (click)="clearAvatar()"
+              [disabled]="savingAvatar()"
+              type="button"
+            >
+              Remove
+            </ui-button>
+          }
+        </div>
+      </div>
+      @if (avatarError()) {
+        <p class="inline-error" role="alert">{{ avatarError() }}</p>
+      }
+    </ui-card>
+
+    <!-- Display name -->
+    <ui-card padding="md" class="profile-card">
+      <h2 class="card-heading">Display name</h2>
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+        <div class="field">
+          <label for="displayName" class="field__label">Display name</label>
+          <input
+            id="displayName"
+            type="text"
+            formControlName="displayName"
+            maxlength="64"
+            class="field__input"
+            placeholder="Your display name"
+          />
+        </div>
+        @if (profileError()) {
+          <p class="inline-error" role="alert">{{ profileError() }}</p>
+        }
+        <ui-button
+          type="submit"
+          variant="primary"
+          size="sm"
+          [loading]="saving()"
+          [disabled]="profileForm.invalid || saving()"
+        >
+          Save
+        </ui-button>
+      </form>
+    </ui-card>
+
+    <!-- Preferences -->
+    <ui-card padding="md" class="profile-card">
+      <h2 class="card-heading">Preferences</h2>
+      <form [formGroup]="soundForm" (ngSubmit)="saveSound()">
+        <div class="pref-row">
+          <label class="checkbox-label" for="soundOnMessage">
+            <input id="soundOnMessage" type="checkbox" formControlName="soundOnMessage" class="checkbox-input" />
+            <span>Play sound on new message <span class="pref-hint">(when tab is not focused)</span></span>
+          </label>
+        </div>
+
+        <div class="theme-selector">
+          <span class="field__label">Theme</span>
+          <div class="theme-options">
+            <label class="theme-option" [class.selected]="themePreference() === 'system'">
+              <input
+                type="radio"
+                name="theme"
+                value="system"
+                [checked]="themePreference() === 'system'"
+                (change)="setTheme('system')"
+                class="theme-radio"
+              />
+              System
+            </label>
+            <label class="theme-option" [class.selected]="themePreference() === 'light'">
+              <input
+                type="radio"
+                name="theme"
+                value="light"
+                [checked]="themePreference() === 'light'"
+                (change)="setTheme('light')"
+                class="theme-radio"
+              />
+              Light
+            </label>
+            <label class="theme-option" [class.selected]="themePreference() === 'dark'">
+              <input
+                type="radio"
+                name="theme"
+                value="dark"
+                [checked]="themePreference() === 'dark'"
+                (change)="setTheme('dark')"
+                class="theme-radio"
+              />
+              Dark
+            </label>
+          </div>
+        </div>
+
+        <ui-button
+          type="submit"
+          variant="primary"
+          size="sm"
+          [loading]="saving()"
+          [disabled]="saving()"
+        >
+          Save preferences
+        </ui-button>
+      </form>
+    </ui-card>
+
+    <!-- Change password -->
+    <ui-card padding="md" class="profile-card">
+      <h2 class="card-heading">Change password</h2>
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+        <div class="field">
+          <label for="currentPassword" class="field__label">Current password</label>
+          <input
+            id="currentPassword"
+            type="password"
+            formControlName="currentPassword"
+            class="field__input"
+            autocomplete="current-password"
+          />
+        </div>
+        <div class="field">
+          <label for="newPassword" class="field__label">New password</label>
+          <input
+            id="newPassword"
+            type="password"
+            formControlName="newPassword"
+            class="field__input"
+            autocomplete="new-password"
+          />
+        </div>
+        @if (passwordError()) {
+          <p class="inline-error" role="alert">{{ passwordError() }}</p>
+        }
+        @if (passwordSuccess()) {
+          <p class="inline-success">Password changed successfully.</p>
+        }
+        <ui-button
+          type="submit"
+          variant="primary"
+          size="sm"
+          [loading]="savingPassword()"
+          [disabled]="passwordForm.invalid || savingPassword()"
+        >
+          Change password
+        </ui-button>
+      </form>
+    </ui-card>
+
+    <!-- Danger zone -->
+    <ui-card padding="md" class="profile-card profile-card--danger">
+      <h2 class="card-heading card-heading--danger">Delete account</h2>
+      <p class="danger-desc">
+        Permanently deletes your account. Rooms you own will be deleted along with all their messages and files.
+        Your messages in rooms you don't own will remain, attributed to "Deleted user".
+      </p>
+      <form [formGroup]="deleteAccountForm" (ngSubmit)="deleteAccount()">
+        <div class="field">
+          <label for="deletePassword" class="field__label">Password</label>
+          <input
+            id="deletePassword"
+            type="password"
+            formControlName="password"
+            class="field__input"
+            autocomplete="current-password"
+          />
+        </div>
+        <div class="field">
+          <label for="confirmUsername" class="field__label">
+            Type your username <strong class="username-confirm">{{ u.username }}</strong> to confirm
+          </label>
+          <input
+            id="confirmUsername"
+            type="text"
+            formControlName="confirmUsername"
+            class="field__input"
+            [placeholder]="u.username"
+            autocomplete="off"
+          />
+        </div>
+        @if (deleteAccountError()) {
+          <p class="inline-error" role="alert">{{ deleteAccountError() }}</p>
+        }
+        <ui-button
+          type="submit"
+          variant="danger"
+          size="sm"
+          [loading]="deletingAccount()"
+          [disabled]="deleteAccountForm.invalid || deletingAccount()"
+        >
+          Delete my account
+        </ui-button>
+      </form>
+    </ui-card>
+  </div>
+}

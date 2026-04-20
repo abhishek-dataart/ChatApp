@@ -2,19 +2,19 @@
 
 ## Context
 
-The repository contains `docs/high_level_requirement.txt` — a functional/non-functional brief for a classic web chat (registration, rooms, DMs, contacts, attachments, moderation) sized for 300 concurrent users. The brief leaves several load-bearing decisions open: tech stack, session model, AFK definition, admin-vs-admin moderation semantics, ban reversibility, deleted-user handling, capacity enforcement, attachment safety, and several smaller UX details. This spec closes those gaps based on the clarifying interview, so implementation can start without further back-and-forth.
+The repository contains `docs/requirements/requirement.md` — a functional/non-functional brief for a classic web chat (registration, rooms, DMs, contacts, attachments, moderation) sized for 300 concurrent users. The brief leaves several load-bearing decisions open: tech stack, session model, AFK definition, admin-vs-admin moderation semantics, ban reversibility, deleted-user handling, capacity enforcement, attachment safety, and several smaller UX details. This spec closes those gaps based on the clarifying interview, so implementation can start without further back-and-forth.
 
 ---
 
 ## 1. Tech Stack and Deployment
 
-- **Backend**: ASP.NET Core (.NET 9) Web API + SignalR hub.
-- **Frontend**: Angular (latest LTS) SPA.
-- **Database**: PostgreSQL 16 (EF Core with migrations).
+- **Backend**: ASP.NET Core (.NET 10) Web API + SignalR hubs.
+- **Frontend**: Angular 19 SPA (standalone components, Signals).
+- **Database**: PostgreSQL 16 (EF Core with migrations, `snake_case` naming).
 - **Realtime**: SignalR over WebSocket (fallback to long-polling handled by SignalR itself).
 - **File storage**: local filesystem, mounted volume (`/var/chatapp/files`).
-- **Antivirus**: ClamAV as a sidecar container; API calls it over TCP/clamd on every upload.
-- **Deployment**: `docker-compose.yml` with services `api`, `web` (nginx serving Angular bundle + reverse-proxying `/api` and `/hub`), `db`, `clamav`.
+- **Antivirus**: ClamAV runs as a sidecar container and is used when `ChatApp:Attachments:Scanner=clamav` (default). Setting it to `noop` swaps in `NoOpScanner` so the stack can run without the AV container — the hook is behind `IAttachmentScanner`.
+- **Deployment**: `infra/docker-compose.yml` with services `db`, `api`, `web` (nginx serving the Angular bundle + reverse-proxying `/api` and `/hub`), and `clamav` (optional, toggled by config).
 - **Configuration**: environment variables; connection strings and secrets out of source.
 
 ### Out of scope (explicit)
@@ -27,7 +27,7 @@ Password reset, typing indicators, read receipts, link unfurls, platform super-a
 
 All IDs are `uuid` unless stated.
 
-- **User**(`id`, `email` unique CI, `username` unique CI immutable, `display_name`, `avatar_path?`, `password_hash` (Argon2id), `created_at`, `deleted_at?`).
+- **User**(`id`, `email` unique CI, `username` unique CI immutable, `display_name`, `avatar_path?`, `password_hash` (PBKDF2 via ASP.NET Core `PasswordHasher<User>`), `created_at`, `deleted_at?`).
 - **Session**(`id`, `user_id`, `cookie_hash`, `user_agent`, `ip`, `created_at`, `last_seen_at`, `revoked_at?`).
 - **Friendship**(`user_id_low`, `user_id_high`, `state` = `pending|accepted`, `requester_id`, `request_note?`, `created_at`, `accepted_at?`) — one row per unordered pair.
 - **UserBan**(`banner_id`, `banned_id`, `created_at`, `lifted_at?`) — reversible; active when `lifted_at` is null.
@@ -184,7 +184,7 @@ DMs share all message/attachment features with rooms. No admins; moderation is N
 - Server pipeline on upload:
   1. Enforce size caps (client and server).
   2. MIME sniffing via magic bytes; reject mismatch vs claimed type.
-  3. ClamAV scan via clamd TCP; reject infected.
+  3. `IAttachmentScanner.ScanAsync` — default `ClamAvScanner` (clamd TCP) when ClamAV is running; `NoOpScanner` when configured. Infected files are rejected.
   4. For images: generate thumbnail (longest side 512 px, JPEG quality 80) stored alongside original.
   5. Persist with original filename; stored on disk under content-addressed path `files/{yyyy}/{mm}/{uuid}{.ext}`.
 - Optional `comment` per attachment.
@@ -231,7 +231,7 @@ Top-level routes: `/login`, `/register`, `/app` (authenticated shell).
 - **Scale**: 300 concurrent SignalR connections; 1000 default members/room (raisable). Typical 20 rooms × 50 contacts per user.
 - **Performance**: message p95 <3 s; presence p95 <2 s; 10 000-message room scrolls smoothly (server supports keyset pagination; client virtualises the list).
 - **Persistence**: messages retained indefinitely.
-- **Security**: Argon2id hashing, HttpOnly+Secure cookies, SameSite=Lax, CSRF token on non-GET, parameterised queries via EF Core, uploads behind auth + AV, `X-Content-Type-Options: nosniff`, strict file Content-Disposition. CSP on the web container.
+- **Security**: PBKDF2 password hashing (ASP.NET Core `PasswordHasher<User>`), HttpOnly+Secure cookies with SameSite=Lax, double-submit CSRF token on non-GET REST, parameterised queries via EF Core, uploads behind auth + pluggable AV, `X-Content-Type-Options: nosniff`, strict `Content-Disposition: attachment` on file downloads. CSP and security headers applied in nginx.
 - **Consistency**: all permission checks server-side on every hub call and REST call; SignalR groups map 1-1 to rooms and personal chats.
 - **Logging**: structured (Serilog), audit entries for all moderation actions.
 
@@ -239,26 +239,25 @@ Top-level routes: `/login`, `/register`, `/app` (authenticated shell).
 
 ## 12. High-Level Architecture
 
-- **Web container** (nginx): serves Angular static bundle; reverse-proxies `/api/*` and `/hub/*` to the api container.
-- **API container** (.NET): controllers (REST) + SignalR hub(s):
+- **Web container** (nginx): serves Angular static bundle; reverse-proxies `/api/*` and `/hub/*` to the api container; applies CSP and security headers.
+- **API container** (.NET 10): REST controllers + two SignalR hubs:
   - `PresenceHub` — tab heartbeats, contact/room presence broadcasting.
-  - `ChatHub` — message send/edit/delete/reply events per group (room or DM).
-  - `ModerationHub` (or folded into ChatHub groups) — admin-action broadcasts.
-- **DB container**: Postgres with EF Core migrations applied on api startup.
-- **ClamAV container**: clamd exposed only on the internal docker network; api uploads via TCP.
+  - `ChatHub` — broadcast of `MessageCreated` / `MessageEdited` / `MessageDeleted` / moderation events. The hub exposes **no** write methods for messages; all writes are REST and the controller fans out to the resolved group (`room:{id}` | `pchat:{id}` | `user:{id}`).
+- **DB container**: Postgres 16 with EF Core migrations applied on api startup via `db.Database.Migrate()`.
+- **ClamAV container**: optional; clamd on the internal docker network. API selects scanner via `ChatApp:Attachments:Scanner` (`clamav` | `noop`).
 - **Shared volume**: `files-data` mounted into api at `/var/chatapp/files`.
 
 ---
 
-## 13. Critical Files to Create
+## 13. Repository Layout
 
-- `server/ChatApp.sln`, `server/ChatApp.Api/` — ASP.NET Core project.
-- `server/ChatApp.Api/Hubs/{PresenceHub,ChatHub}.cs`
-- `server/ChatApp.Api/Controllers/` — `Auth`, `Users`, `Sessions`, `Friends`, `Rooms`, `Messages`, `Attachments`, `Invitations`, `Moderation`.
-- `server/ChatApp.Data/` — EF Core DbContext, entities, migrations.
-- `server/ChatApp.Domain/` — domain services (PresenceAggregator, RoomPermissionService, AttachmentPipeline).
-- `client/` — Angular workspace (`ng new`), modules per feature (auth, app-shell, rooms, dms, contacts, sessions, profile, manage-room).
-- `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web`, `nginx.conf`.
+- `server/ChatApp.sln` with four projects:
+  - `ChatApp.Api` — REST controllers (grouped by context under `Controllers/{Auth,Users,Sessions,Social,Rooms,Messages,Attachments}`), `Hubs/{PresenceHub,ChatHub}.cs`, `Infrastructure/` (auth handler, CSRF, rate limiters, presence, broadcaster, image processors), `Program.cs`.
+  - `ChatApp.Domain` — abstractions, enums, pure helpers.
+  - `ChatApp.Data` — `ChatDbContext`, entity configurations, migrations, and the service implementations under `Data/Services/*` (auth, sessions, friendships, rooms, messaging, attachments, moderation).
+  - `ChatApp.Tests` — xUnit Unit + Integration suites (Testcontainers Postgres + `WebApplicationFactory`).
+- `client/` — Angular 19 standalone workspace: `core/` (auth, http interceptors, signalr, messaging, presence, rooms, social, sessions, profile, notifications, context, layout, theme), `features/` (auth, app-shell, rooms, dms, contacts, sessions, profile, manage-room), `shared/` (ui, pipes, messaging). Playwright e2e under `client/e2e/`.
+- `infra/docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web`, `nginx.conf`.
 - `docs/specs/00-product-spec.md` — this spec.
 
 ---
@@ -272,5 +271,5 @@ Top-level routes: `/login`, `/register`, `/app` (authenticated shell).
    - One user creates a public room, the other joins via catalog search, sends an image (thumbnail appears), replies to it.
    - Admin bans the member; banned entry appears; admin unbans; re-join works.
    - Capacity set to 2, third user join fails with 409; 95% banner shows at capacity=3.
-4. **Load check**: `bombardier`/`k6` script pushing 300 WebSocket clients, each sending 1 message/5s, asserting p95 delivery <3 s.
+4. **Load check**: `bombardier`/`k6` script pushing 300 WebSocket clients, each sending 1 message/5s, asserting p95 delivery < 3 s.
 5. **Security smoke**: EICAR file upload is rejected; attempt to download a room attachment after being banned returns 403.

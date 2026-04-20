@@ -1,0 +1,16 @@
+<div class="tab-strip" role="tablist">
+  @for (tab of tabs(); track tab.tabId) {
+    <button
+      class="tab-btn"
+      role="tab"
+      [class.active]="isActive(tab.tabId)"
+      [attr.aria-selected]="isActive(tab.tabId)"
+      (click)="select(tab.tabId)"
+    >
+      {{ tab.label }}
+    </button>
+  }
+</div>
+<div class="tab-panels">
+  <ng-content />
+</div>

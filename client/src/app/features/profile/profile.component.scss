@@ -1,0 +1,243 @@
+:host {
+  display: block;
+}
+
+.profile-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.profile-page__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Cards ── */
+.profile-card {
+  /* sizing handled by ui-card host */
+
+  &--danger {
+    border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+  }
+}
+
+.card-heading {
+  font-size: var(--text-base);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-4) 0;
+
+  &--danger {
+    color: var(--color-danger);
+  }
+}
+
+/* ── Fields ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+}
+
+.field__readonly {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+  padding: var(--space-2) 0;
+}
+
+.field__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--color-text-subtle);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ── Avatar ── */
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.avatar-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-circle__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-circle__initials {
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-accent-fg);
+  text-transform: uppercase;
+}
+
+.avatar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.avatar-upload-label {
+  position: relative;
+  cursor: pointer;
+
+  &.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+.avatar-file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* ── Preferences ── */
+.pref-row {
+  margin-bottom: var(--space-4);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pref-hint {
+  color: var(--color-text-subtle);
+}
+
+.theme-selector {
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.theme-options {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-sunken);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &.selected {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    color: var(--color-accent);
+  }
+}
+
+.theme-radio {
+  display: none;
+}
+
+/* ── Danger zone ── */
+.danger-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-4) 0;
+  line-height: 1.5;
+}
+
+.username-confirm {
+  font-family: monospace;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+/* ── Feedback ── */
+.inline-error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.inline-success {
+  font-size: var(--text-sm);
+  color: var(--color-success);
+  margin: 0 0 var(--space-3) 0;
+}

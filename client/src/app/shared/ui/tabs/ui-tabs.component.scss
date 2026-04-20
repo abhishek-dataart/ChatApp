@@ -1,0 +1,42 @@
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-strip {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  gap: 0;
+}
+
+.tab-btn {
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &.active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.tab-panels {
+  flex: 1;
+}

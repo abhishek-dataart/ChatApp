@@ -1,0 +1,11 @@
+namespace ChatApp.Api.Contracts.Rooms;
+
+public sealed record RoomSummary(
+    Guid Id,
+    string Name,
+    string Description,
+    string Visibility,
+    int MemberCount,
+    int Capacity,
+    DateTimeOffset CreatedAt,
+    string? LogoUrl);

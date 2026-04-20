@@ -1,0 +1,11 @@
+<div class="menu-host">
+  <div class="trigger" (click)="toggle()">
+    <ng-content select="[trigger]" />
+  </div>
+
+  @if (isOpen()) {
+    <div class="overlay" role="menu">
+      <ng-content select="[items]" />
+    </div>
+  }
+</div>

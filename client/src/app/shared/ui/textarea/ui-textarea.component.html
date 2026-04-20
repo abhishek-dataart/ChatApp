@@ -1,0 +1,14 @@
+<div class="field" [class.has-error]="error()">
+  <textarea
+    #textareaEl
+    class="textarea"
+    [placeholder]="placeholder() ?? ''"
+    [rows]="rows()"
+    [disabled]="isDisabled()"
+    (input)="handleInput($event)"
+    (blur)="handleBlur()"
+  >{{ value() }}</textarea>
+  @if (error()) {
+    <span class="helper error-text">{{ error() }}</span>
+  }
+</div>

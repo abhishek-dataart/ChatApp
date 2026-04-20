@@ -1,0 +1,68 @@
+:host {
+  display: block;
+}
+
+.toast-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-3) var(--space-4);
+  min-width: 280px;
+  max-width: 420px;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  position: relative;
+}
+
+.strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.message {
+  flex: 1;
+  padding-left: var(--space-1);
+  line-height: 1.4;
+}
+
+.close-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  padding: 0 var(--space-1);
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    border-radius: var(--radius-sm);
+  }
+}
+
+:host.severity-info .strip {
+  background: var(--color-accent);
+}
+
+:host.severity-warn .strip {
+  background: var(--color-warning);
+}
+
+:host.severity-error .strip {
+  background: var(--color-danger);
+}

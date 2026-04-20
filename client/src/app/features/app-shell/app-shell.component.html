@@ -1,0 +1,20 @@
+<ui-toast-container />
+<div class="shell">
+  <app-top-bar class="shell__topbar" />
+  <div class="shell__body">
+    @if (layout.sidebarOpenMobile()) {
+      <div class="shell__drawer-backdrop" (click)="layout.closeMobileDrawer()"></div>
+    }
+    <app-side-nav
+      class="shell__sidebar"
+      [class.collapsed]="layout.sidebarCollapsed()"
+      [class.drawer-open]="layout.sidebarOpenMobile()"
+    />
+    <main class="shell__main">
+      <router-outlet />
+    </main>
+    @if (layout.contextPanelVisible()) {
+      <app-context-panel class="shell__context" />
+    }
+  </div>
+</div>

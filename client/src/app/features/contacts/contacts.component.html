@@ -1,0 +1,252 @@
+<div class="contacts-page">
+
+  <!-- Tab bar -->
+  <nav class="tab-bar" role="tablist">
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'add'"
+      role="tab"
+      (click)="activeTab.set('add')"
+    >
+      Add Friend
+    </button>
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'incoming'"
+      role="tab"
+      (click)="activeTab.set('incoming')"
+    >
+      Incoming
+      @if (incoming().length > 0) {
+        <ui-badge variant="warning" [count]="incoming().length" />
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'outgoing'"
+      role="tab"
+      (click)="activeTab.set('outgoing')"
+    >
+      Outgoing
+      @if (outgoing().length > 0) {
+        <ui-badge variant="default" [count]="outgoing().length" />
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'friends'"
+      role="tab"
+      (click)="activeTab.set('friends')"
+    >
+      Friends
+      @if (friends().length > 0) {
+        <ui-badge variant="success" [count]="friends().length" />
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'rooms'"
+      role="tab"
+      (click)="activeTab.set('rooms')"
+    >
+      Rooms
+      @if ((roomInvitations()?.length ?? 0) > 0) {
+        <ui-badge variant="accent" [count]="roomInvitations()!.length" />
+      }
+    </button>
+  </nav>
+
+  @if (actionError()) {
+    <p class="feedback feedback--error" role="alert">{{ actionError() }}</p>
+  }
+
+  <!-- Add Friend tab -->
+  @if (activeTab() === 'add') {
+    <section class="tab-panel">
+      <form [formGroup]="addForm" (ngSubmit)="sendRequest()" class="add-form">
+        <div class="field">
+          <label for="add-username" class="field__label">Username</label>
+          <input
+            id="add-username"
+            formControlName="username"
+            type="text"
+            placeholder="Enter username"
+            autocomplete="off"
+            class="field__input"
+          />
+        </div>
+        <div class="field">
+          <label for="add-note" class="field__label">
+            Note <span class="field__optional">(optional)</span>
+          </label>
+          <textarea
+            id="add-note"
+            formControlName="note"
+            rows="2"
+            maxlength="500"
+            placeholder="Add a short note..."
+            class="field__textarea"
+          ></textarea>
+        </div>
+        @if (sendError()) {
+          <p class="feedback feedback--error" role="alert">{{ sendError() }}</p>
+        }
+        @if (sendSuccess()) {
+          <p class="feedback feedback--success">{{ sendSuccess() }}</p>
+        }
+        <ui-button
+          type="submit"
+          variant="primary"
+          size="sm"
+          [loading]="submitting()"
+          [disabled]="submitting() || addForm.invalid"
+        >
+          Send Request
+        </ui-button>
+      </form>
+    </section>
+  }
+
+  <!-- Incoming Requests tab -->
+  @if (activeTab() === 'incoming') {
+    <section class="tab-panel">
+      @if (incoming().length === 0) {
+        <ui-empty-state heading="No incoming requests" subtext="When someone sends you a friend request, it will appear here." />
+      } @else {
+        <div class="contact-list">
+          @for (item of incoming(); track item.friendshipId) {
+            <div class="contact-row">
+              <ui-avatar
+                [src]="item.user.avatarUrl ?? undefined"
+                [name]="item.user.displayName"
+                size="md"
+              />
+              <div class="contact-row__info">
+                <span class="contact-row__name">{{ item.user.displayName }}</span>
+                <span class="contact-row__sub">&#64;{{ item.user.username }}</span>
+                @if (item.note) {
+                  <p class="contact-row__note">{{ item.note }}</p>
+                }
+              </div>
+              <div class="contact-row__actions">
+                <ui-button variant="primary" size="sm" (click)="accept(item.friendshipId)">
+                  Accept
+                </ui-button>
+                <ui-button variant="ghost" size="sm" (click)="decline(item.friendshipId)">
+                  Decline
+                </ui-button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Outgoing Requests tab -->
+  @if (activeTab() === 'outgoing') {
+    <section class="tab-panel">
+      @if (outgoing().length === 0) {
+        <ui-empty-state heading="No pending requests" subtext="Friend requests you've sent will appear here." />
+      } @else {
+        <div class="contact-list">
+          @for (item of outgoing(); track item.friendshipId) {
+            <div class="contact-row">
+              <ui-avatar
+                [src]="item.user.avatarUrl ?? undefined"
+                [name]="item.user.displayName"
+                size="md"
+              />
+              <div class="contact-row__info">
+                <span class="contact-row__name">{{ item.user.displayName }}</span>
+                <span class="contact-row__sub">&#64;{{ item.user.username }}</span>
+                @if (item.note) {
+                  <p class="contact-row__note">{{ item.note }}</p>
+                }
+              </div>
+              <div class="contact-row__actions">
+                <ui-button variant="ghost" size="sm" (click)="cancelOutgoing(item.friendshipId)">
+                  Cancel
+                </ui-button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Friends tab -->
+  @if (activeTab() === 'friends') {
+    <section class="tab-panel">
+      @if (friends().length === 0) {
+        <ui-empty-state heading="No friends yet" subtext="Send a friend request to get started." />
+      } @else {
+        <div class="contact-list">
+          @for (item of friends(); track item.friendshipId) {
+            <div class="contact-row">
+              <ui-avatar
+                [src]="item.user.avatarUrl ?? undefined"
+                [name]="item.user.displayName"
+                size="md"
+                [presence]="presenceOf(item.user.id)()"
+              />
+              <div class="contact-row__info">
+                <span class="contact-row__name">{{ item.user.displayName }}</span>
+                <span class="contact-row__sub">&#64;{{ item.user.username }}</span>
+              </div>
+              <div class="contact-row__actions">
+                <a [routerLink]="['/app/dms', item.personalChatId]" class="dm-link">
+                  <ui-button variant="secondary" size="sm">
+                    Message
+                    @if (dmUnreadFor(item.personalChatId) > 0) {
+                      <ui-badge variant="danger" [count]="dmUnreadFor(item.personalChatId)" />
+                    }
+                  </ui-button>
+                </a>
+                <ui-button variant="ghost" size="sm" (click)="unfriend(item.friendshipId)">
+                  Unfriend
+                </ui-button>
+                <ui-button variant="danger" size="sm" (click)="block(item.user.id)">
+                  Block
+                </ui-button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Room Invitations tab -->
+  @if (activeTab() === 'rooms') {
+    <section class="tab-panel">
+      @if ((roomInvitations()?.length ?? 0) === 0) {
+        <ui-empty-state heading="No room invitations" subtext="When someone invites you to a room, it will appear here." />
+      } @else {
+        <div class="contact-list">
+          @for (inv of roomInvitations()!; track inv.invitationId) {
+            <div class="contact-row">
+              <div class="contact-row__info">
+                <span class="contact-row__name">{{ inv.room.name }}</span>
+                <span class="contact-row__sub">invited by &#64;{{ inv.inviter.username }}</span>
+                @if (inv.note) {
+                  <p class="contact-row__note">{{ inv.note }}</p>
+                }
+              </div>
+              <div class="contact-row__actions">
+                <ui-button variant="primary" size="sm" (click)="acceptRoomInvitation(inv.invitationId, inv.room.id)">
+                  Accept
+                </ui-button>
+                <ui-button variant="ghost" size="sm" (click)="declineRoomInvitation(inv.invitationId)">
+                  Decline
+                </ui-button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+</div>

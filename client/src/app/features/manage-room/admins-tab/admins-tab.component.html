@@ -1,0 +1,87 @@
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+<section class="admins-section">
+  <h3>Admins</h3>
+  <table class="members-table">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (member of adminsAndOwner; track member.user.id) {
+        <tr>
+          <td>
+            <div class="member-cell">
+              @if (member.user.avatarUrl) {
+                <img class="avatar" [src]="member.user.avatarUrl" [alt]="member.user.displayName" />
+              } @else {
+                <div class="avatar avatar--placeholder">{{ member.user.displayName[0] }}</div>
+              }
+              <div class="member-info">
+                <span class="display-name">{{ member.user.displayName }}</span>
+                <span class="username">&#64;{{ member.user.username }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="role-badge role-badge--{{ member.role }}">{{ member.role }}</span>
+          </td>
+          <td>
+            <div class="actions">
+              @if (canDemote(member)) {
+                <button type="button" class="btn-action btn-demote"
+                  [disabled]="acting() === member.user.id"
+                  (click)="demote(member)">Remove admin</button>
+              }
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>
+
+@if (currentUserRole === 'owner' && eligibleForPromotion.length > 0) {
+  <section class="promote-section">
+    <h3>Make Admin</h3>
+    <table class="members-table">
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (member of eligibleForPromotion; track member.user.id) {
+          <tr>
+            <td>
+              <div class="member-cell">
+                @if (member.user.avatarUrl) {
+                  <img class="avatar" [src]="member.user.avatarUrl" [alt]="member.user.displayName" />
+                } @else {
+                  <div class="avatar avatar--placeholder">{{ member.user.displayName[0] }}</div>
+                }
+                <div class="member-info">
+                  <span class="display-name">{{ member.user.displayName }}</span>
+                  <span class="username">&#64;{{ member.user.username }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="actions">
+                <button type="button" class="btn-action btn-promote"
+                  [disabled]="acting() === member.user.id"
+                  (click)="promote(member)">Make admin</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}

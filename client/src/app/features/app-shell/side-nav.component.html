@@ -1,0 +1,164 @@
+<nav class="side-nav">
+  <!-- Inline search -->
+  <div class="side-nav__search">
+    <lucide-icon class="side-nav__search-icon" [img]="SearchIcon" [size]="14" />
+    <input
+      type="search"
+      class="side-nav__search-input"
+      placeholder="Find…"
+      aria-label="Search channels and contacts"
+      [value]="filterQuery()"
+      (input)="onFilterInput($event)"
+    />
+  </div>
+
+  <!-- Scrollable sections -->
+  <div class="side-nav__scroll">
+
+    <!-- Rooms section -->
+    <section class="side-nav__section">
+      <button
+        type="button"
+        class="side-nav__section-header"
+        (click)="toggleRooms()"
+        [attr.aria-expanded]="roomsExpanded()"
+      >
+        <lucide-icon
+          [img]="roomsExpanded() ? ChevronDownIcon : ChevronRightIcon"
+          [size]="14"
+          class="side-nav__section-chevron"
+        />
+        <span class="side-nav__section-title">Rooms</span>
+      </button>
+
+      @if (roomsExpanded()) {
+        <a
+          class="side-nav__row side-nav__row--nav"
+          routerLink="/app/rooms/public"
+          routerLinkActive="side-nav__row--active"
+        >
+          <lucide-icon class="side-nav__row-icon" [img]="SearchIcon" [size]="15" />
+          <span class="side-nav__row-label">Browse rooms</span>
+        </a>
+        <a
+          class="side-nav__row side-nav__row--nav"
+          routerLink="/app/rooms/private"
+          routerLinkActive="side-nav__row--active"
+        >
+          <lucide-icon class="side-nav__row-icon" [img]="MailIcon" [size]="15" />
+          <span class="side-nav__row-label">Invitations</span>
+          @if (pendingInvitationsCount() > 0) {
+            <ui-badge variant="accent" [count]="pendingInvitationsCount()" class="side-nav__row-badge" />
+          }
+        </a>
+        <!-- Public rooms -->
+        @for (room of publicRooms(); track room.id) {
+          <a
+            class="side-nav__row"
+            [routerLink]="['/app/rooms', room.id]"
+            routerLinkActive="side-nav__row--active"
+          >
+            <app-room-logo class="side-nav__row-logo" [room]="room" size="sm" />
+            <lucide-icon class="side-nav__row-icon" [img]="HashIcon" [size]="15" />
+            <span class="side-nav__row-label">{{ room.name }}</span>
+            @if (unreadService.countFor('room', room.id); as count) {
+              @if (count > 0) {
+                <ui-badge variant="accent" [count]="count" class="side-nav__row-badge" />
+              }
+            }
+          </a>
+        }
+
+        <!-- Private rooms -->
+        @for (room of privateRooms(); track room.id) {
+          <a
+            class="side-nav__row"
+            [routerLink]="['/app/rooms', room.id]"
+            routerLinkActive="side-nav__row--active"
+          >
+            <app-room-logo class="side-nav__row-logo" [room]="room" size="sm" />
+            <lucide-icon class="side-nav__row-icon" [img]="LockIcon" [size]="15" />
+            <span class="side-nav__row-label">{{ room.name }}</span>
+            @if (unreadService.countFor('room', room.id); as count) {
+              @if (count > 0) {
+                <ui-badge variant="accent" [count]="count" class="side-nav__row-badge" />
+              }
+            }
+          </a>
+        }
+
+        @if (publicRooms().length === 0 && privateRooms().length === 0) {
+          <p class="side-nav__empty">No rooms yet</p>
+        }
+      }
+    </section>
+
+    <!-- Contacts / DMs section -->
+    <section class="side-nav__section">
+      <button
+        type="button"
+        class="side-nav__section-header"
+        (click)="toggleContacts()"
+        [attr.aria-expanded]="contactsExpanded()"
+      >
+        <lucide-icon
+          [img]="contactsExpanded() ? ChevronDownIcon : ChevronRightIcon"
+          [size]="14"
+          class="side-nav__section-chevron"
+        />
+        <span class="side-nav__section-title">Direct Messages</span>
+      </button>
+
+      @if (contactsExpanded()) {
+        <a
+          class="side-nav__row side-nav__row--nav"
+          routerLink="/app/contacts"
+          routerLinkActive="side-nav__row--active"
+        >
+          <lucide-icon class="side-nav__row-icon" [img]="SearchIcon" [size]="15" />
+          <span class="side-nav__row-label">Contacts &amp; requests</span>
+          @if (pendingRequestsCount() > 0) {
+            <ui-badge variant="accent" [count]="pendingRequestsCount()" class="side-nav__row-badge" />
+          }
+        </a>
+        @for (friend of friends(); track friend.friendshipId) {
+          <a
+            class="side-nav__row side-nav__row--contact"
+            [routerLink]="['/app/dms', friend.personalChatId]"
+            routerLinkActive="side-nav__row--active"
+          >
+            <div class="side-nav__avatar-wrap">
+              <ui-avatar
+                [name]="friend.user.displayName || friend.user.username"
+                [src]="friend.user.avatarUrl ?? undefined"
+                size="sm"
+              />
+              <ui-presence-dot
+                class="side-nav__presence"
+                [status]="presenceService.stateOf(friend.user.id)()"
+              />
+            </div>
+            <span class="side-nav__row-label">{{ friend.user.displayName || friend.user.username }}</span>
+            @if (unreadService.countFor('personal', friend.personalChatId); as count) {
+              @if (count > 0) {
+                <ui-badge variant="accent" [count]="count" class="side-nav__row-badge" />
+              }
+            }
+          </a>
+        }
+
+        @if (friends().length === 0) {
+          <p class="side-nav__empty">No contacts yet</p>
+        }
+      }
+    </section>
+  </div>
+
+  <!-- Sticky bottom -->
+  <div class="side-nav__footer">
+    <button type="button" class="side-nav__new-room-btn" (click)="navigateNewRoom()">
+      <lucide-icon [img]="PlusIcon" [size]="15" />
+      <span>New Room</span>
+    </button>
+  </div>
+</nav>

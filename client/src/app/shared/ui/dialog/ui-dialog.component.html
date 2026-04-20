@@ -1,0 +1,17 @@
+@if (open()) {
+  <div class="backdrop" (click)="onBackdropClick()" aria-hidden="true"></div>
+  <div
+    #dialogPanel
+    class="panel"
+    role="dialog"
+    aria-modal="true"
+    (click)="onPanelClick($event)"
+  >
+    <div class="dialog-title">
+      <ng-content select="[dialog-title]" />
+    </div>
+    <div class="dialog-body">
+      <ng-content />
+    </div>
+  </div>
+}

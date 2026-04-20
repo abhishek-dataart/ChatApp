@@ -1,0 +1,9 @@
+<div class="empty-state">
+  @if (icon()) {
+    <span class="icon" aria-hidden="true">{{ icon() }}</span>
+  }
+  <p class="heading">{{ heading() }}</p>
+  @if (subtext()) {
+    <p class="subtext">{{ subtext() }}</p>
+  }
+</div>

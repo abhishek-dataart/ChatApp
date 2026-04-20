@@ -1,0 +1,177 @@
+<div class="top-bar">
+  <!-- Nav toggle (hamburger on mobile, rail toggle on desktop) -->
+  <button
+    type="button"
+    class="top-bar__icon-btn top-bar__nav-toggle"
+    aria-label="Toggle sidebar"
+    (click)="layout.toggleSidebar()"
+  >
+    <lucide-icon [img]="MenuIcon" [size]="18" />
+  </button>
+
+  <!-- Left: Logo -->
+  <div class="top-bar__logo">
+    <span class="top-bar__logo-mark">C</span>
+    <span class="top-bar__logo-text">ChatApp</span>
+  </div>
+
+  <!-- Center: User search (hidden on mobile below 600px, shown via toggle) -->
+  <div class="top-bar__search-wrap" [class.expanded]="searchInputVisible()">
+    <button
+      type="button"
+      class="top-bar__icon-btn top-bar__search-toggle"
+      aria-label="Toggle search"
+      (click)="toggleSearchInput()"
+    >
+      <lucide-icon [img]="SearchIcon" [size]="18" />
+    </button>
+
+    <div class="top-bar__search">
+      <lucide-icon class="top-bar__search-icon" [img]="SearchIcon" [size]="15" />
+      <input
+        type="search"
+        class="top-bar__search-input"
+        placeholder="Find users…"
+        aria-label="Search users"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        (focus)="onSearchFocus()"
+      />
+    </div>
+
+    @if (searchOpen()) {
+      <div class="top-bar__search-dropdown" role="listbox">
+        @if (searchLoading()) {
+          <div class="top-bar__search-empty">Searching…</div>
+        } @else if (searchResults().length === 0) {
+          <div class="top-bar__search-empty">No users found.</div>
+        } @else {
+          @for (r of searchResults(); track r.id) {
+            <div class="top-bar__search-row">
+              <ui-avatar
+                [name]="r.displayName || r.username"
+                [src]="r.avatarUrl ?? undefined"
+                size="sm"
+              />
+              <div class="top-bar__search-info">
+                <span class="top-bar__search-name">{{ r.displayName || r.username }}</span>
+                <span class="top-bar__search-username">&#64;{{ r.username }}</span>
+              </div>
+              @if (r.isFriend && r.personalChatId) {
+                <button
+                  type="button"
+                  class="top-bar__search-action top-bar__search-action--primary"
+                  (click)="chatWith(r)"
+                >Chat</button>
+              } @else {
+                <button
+                  type="button"
+                  class="top-bar__search-action"
+                  (click)="openAddDialog(r)"
+                >Add</button>
+              }
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  @if (addDialogOpen() && addTarget(); as target) {
+    <div class="top-bar__modal-backdrop" (click)="closeAddDialog()">
+      <div class="top-bar__modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <h3 class="top-bar__modal-title">Send friend request</h3>
+        <p class="top-bar__modal-sub">To &#64;{{ target.username }}</p>
+        <label class="top-bar__modal-label" for="add-friend-note">Note (optional)</label>
+        <textarea
+          id="add-friend-note"
+          class="top-bar__modal-textarea"
+          rows="3"
+          maxlength="500"
+          placeholder="Say hello…"
+          [value]="addNote()"
+          (input)="onAddNoteInput($event)"
+        ></textarea>
+        @if (addError()) {
+          <p class="top-bar__modal-error" role="alert">{{ addError() }}</p>
+        }
+        <div class="top-bar__modal-actions">
+          <button type="button" class="top-bar__modal-btn" (click)="closeAddDialog()" [disabled]="addSubmitting()">Cancel</button>
+          <button
+            type="button"
+            class="top-bar__modal-btn top-bar__modal-btn--primary"
+            (click)="submitAdd()"
+            [disabled]="addSubmitting()"
+          >{{ addSubmitting() ? 'Sending…' : 'Send request' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Right: Actions -->
+  <div class="top-bar__actions">
+    <app-theme-toggle />
+
+    <button type="button" class="top-bar__icon-btn" aria-label="Notifications">
+      <lucide-icon [img]="BellIcon" [size]="18" />
+    </button>
+
+    <!-- Context panel toggle (visible below 1200px) -->
+    <button
+      type="button"
+      class="top-bar__icon-btn top-bar__context-toggle"
+      aria-label="Toggle context panel"
+      (click)="layout.toggleContextPanel()"
+    >
+      <lucide-icon [img]="PanelRightIcon" [size]="18" />
+    </button>
+
+    @if (user(); as u) {
+      <div class="top-bar__avatar-wrap">
+        <button
+          type="button"
+          class="top-bar__avatar-btn"
+          (click)="toggleDropdown()"
+          [attr.aria-expanded]="dropdownOpen()"
+          aria-haspopup="menu"
+          aria-label="User menu"
+        >
+          <ui-avatar
+            [name]="u.displayName || u.username"
+            [src]="u.avatarUrl ?? undefined"
+            size="sm"
+          />
+        </button>
+
+        @if (dropdownOpen()) {
+          <div class="top-bar__dropdown" role="menu">
+            <div class="top-bar__dropdown-header">
+              <span class="top-bar__dropdown-name">{{ u.displayName || u.username }}</span>
+              <span class="top-bar__dropdown-username">&#64;{{ u.username }}</span>
+            </div>
+            <div class="top-bar__dropdown-divider"></div>
+            <a
+              routerLink="/app/profile"
+              class="top-bar__dropdown-item"
+              role="menuitem"
+              (click)="closeDropdown()"
+            >Profile</a>
+            <a
+              routerLink="/app/sessions"
+              class="top-bar__dropdown-item"
+              role="menuitem"
+              (click)="closeDropdown()"
+            >Sessions</a>
+            <div class="top-bar__dropdown-divider"></div>
+            <button
+              type="button"
+              class="top-bar__dropdown-item top-bar__dropdown-item--danger"
+              role="menuitem"
+              (click)="signOut()"
+            >Sign out</button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

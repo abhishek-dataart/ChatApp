@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-toast);
+  pointer-events: none;
+}
+
+.toast-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-end;
+  pointer-events: all;
+}

@@ -1,0 +1,24 @@
+<div class="avatar-wrap">
+  @if (showImage()) {
+    <img
+      class="avatar-img"
+      [src]="src()"
+      [alt]="name()"
+      (error)="onImgError()"
+    />
+  } @else {
+    <div class="avatar-initials" [attr.aria-label]="name()">
+      {{ initials() }}
+    </div>
+  }
+
+  @if (presence()) {
+    <span
+      class="presence-dot"
+      [class]="'presence-' + presence()"
+      [style.width]="presenceDotSize()"
+      [style.height]="presenceDotSize()"
+      [attr.aria-label]="presence()"
+    ></span>
+  }
+</div>

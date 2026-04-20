@@ -1,0 +1,78 @@
+<div class="settings-section logo-section">
+  <h3>Room Logo</h3>
+  <div class="logo-row">
+    <app-room-logo [room]="displayRoom()" size="md" />
+    <div class="logo-actions">
+      <label class="btn-save logo-upload-btn">
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+          (change)="onLogoChange($event)"
+          hidden
+        />
+        {{ savingLogo() ? 'Uploading…' : 'Change logo' }}
+      </label>
+      @if (displayRoom().logoUrl) {
+        <button
+          type="button"
+          class="btn-delete logo-remove-btn"
+          [disabled]="savingLogo()"
+          (click)="removeLogo()"
+        >
+          Remove
+        </button>
+      }
+    </div>
+  </div>
+  <p class="logo-hint">PNG, JPEG, GIF, or WEBP · max 1 MB · displayed at 256 × 256 px</p>
+  @if (logoError()) {
+    <p class="error">{{ logoError() }}</p>
+  }
+</div>
+
+<form class="settings-form" (ngSubmit)="saveSettings()">
+  <div class="field-group">
+    <label for="room-name">Room name</label>
+    <input
+      id="room-name"
+      type="text"
+      [value]="name()"
+      (input)="onNameInput($event)"
+    />
+  </div>
+  <div class="field-group">
+    <label for="room-desc">Description</label>
+    <textarea
+      id="room-desc"
+      rows="3"
+      [value]="description()"
+      (input)="onDescInput($event)"
+    ></textarea>
+  </div>
+  <div class="field-group">
+    <label for="room-visibility">Visibility</label>
+    <select id="room-visibility" [value]="visibility()" (change)="onVisibilityChange($event)">
+      <option value="public">Public</option>
+      <option value="private">Private</option>
+    </select>
+  </div>
+  @if (saveError()) {
+    <p class="error">{{ saveError() }}</p>
+  }
+  <button type="submit" class="btn-save" [disabled]="saving()">
+    {{ saving() ? 'Saving...' : 'Save' }}
+  </button>
+</form>
+
+@if (isOwner) {
+  <div class="settings-section danger-zone">
+    <h3>Danger Zone</h3>
+    <p class="danger-desc">Permanently delete this room. All members will be removed. This cannot be undone.</p>
+    <button type="button" class="btn-delete" [disabled]="deletingRoom()" (click)="deleteRoom()">
+      {{ deletingRoom() ? 'Deleting...' : 'Delete Room' }}
+    </button>
+    @if (deleteError()) {
+      <p class="error">{{ deleteError() }}</p>
+    }
+  </div>
+}

@@ -1,0 +1,25 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+:host.status-online .dot {
+  background: var(--presence-online);
+}
+
+:host.status-afk .dot {
+  background: var(--presence-afk);
+}
+
+:host.status-offline .dot {
+  background: var(--presence-offline);
+}

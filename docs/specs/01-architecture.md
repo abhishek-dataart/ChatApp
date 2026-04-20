@@ -10,9 +10,10 @@ The target envelope is **300 concurrent users on a single API container**. Every
 
 | Area | Spec said | Architecture says | Why |
 |---|---|---|---|
-| Projects | 3-project clean arch | 3 projects (kept) | Preserve layer discipline. |
+| Projects | 3-project clean arch | **4 projects**: `ChatApp.Api`, `ChatApp.Domain`, `ChatApp.Data`, `ChatApp.Tests` | Tests project carved out to keep Api/Domain/Data production-only. |
+| Service location | Services in `ChatApp.Domain` | **Service implementations live under `ChatApp.Data/Services/*`**; `ChatApp.Domain` holds abstractions, enums, and pure helpers | Pragmatic: most services are thin wrappers around `ChatDbContext`; keeping them with the data layer avoids an anaemic Domain and a blizzard of repository interfaces. Infra pieces with no persistence (`PresenceAggregator`, image processors, broadcaster) live in `ChatApp.Api/Infrastructure/`. |
 | SignalR hubs | Presence + Chat + possibly Moderation | **2 hubs: `PresenceHub`, `ChatHub`** | Moderation events are just state changes on rooms — fold into `ChatHub` groups. |
-| ClamAV | Sidecar, blocking scan per upload | **Deferred.** `IAttachmentScanner` interface with no-op impl | AV sidecar (~1 GB signatures, freshclam schedule, extra failure mode) is unjustified at MVP scale; the hook is preserved so a real scanner drops in later. |
+| ClamAV | Sidecar, blocking scan per upload | **Included as optional sidecar.** `IAttachmentScanner` with `ClamAvScanner` (default) and `NoOpScanner`, selected via `ChatApp:Attachments:Scanner` | Full implementation is wired, but the stack can run without the AV container by toggling config — useful for dev, CI, and the MVP envelope. |
 | Password hash | Argon2id (Konscious) | **ASP.NET Core `PasswordHasher` (PBKDF2)** | Zero deps, audited, adequate at this scale. |
 | Sessions | Custom table + `sha256(cookie)` | Kept | Sessions screen (list UA/IP/last-seen + revoke) requires server-side state. |
 | Presence | 20s heartbeat + server aggregation | Kept | Deterministic, matches spec. |
@@ -28,28 +29,59 @@ The target envelope is **300 concurrent users on a single API container**. Every
 ```
 server/
   ChatApp.sln
-  ChatApp.Api/              controllers, hubs, middleware, Program.cs, appsettings
-    Controllers/            Auth, Users, Sessions, Friends, Rooms, Messages,
-                            Attachments, Invitations, Moderation
+  Directory.Build.props     TreatWarningsAsErrors=true, Nullable=enable, net10.0
+  global.json               .NET SDK pinned to 10.0.100 (latestFeature)
+  ChatApp.Api/
+    Program.cs              DI, auth, CSRF, rate limiters, SignalR, health checks
+    Controllers/
+      Auth/                 AuthController
+      Users/                ProfileController, UserSearchController
+      Sessions/             SessionsController
+      Social/               FriendshipsController, BansController
+      Rooms/                RoomsController, InvitationsController, ModerationController
+      Messages/             RoomMessagesController, PersonalMessagesController,
+                            MessagesController (edit/delete), UnreadController
+      Attachments/          AttachmentsController
     Hubs/                   PresenceHub.cs, ChatHub.cs
-    Infrastructure/         auth, rate-limiting, CSRF, error handling
-  ChatApp.Domain/           pure services where practical
-                            PresenceAggregator, RoomPermissionService,
-                            AttachmentPipeline, UnreadService
-  ChatApp.Data/             ChatDbContext, entity configs, migrations
-  ChatApp.Tests/            xUnit + Testcontainers(Postgres) + WebApplicationFactory
+    Infrastructure/         SessionAuthenticationHandler, CSRF middleware,
+                            ChatBroadcaster, PresenceAggregator / PresenceTickService,
+                            LoginRateLimiter, HubRateLimiter, image processors,
+                            ProblemDetails / error handling, AttachmentPurger
+  ChatApp.Domain/           abstractions (IAttachmentScanner, IPresenceStore,
+                            ICurrentUser, image-processor interfaces),
+                            enums, pure helpers (PresenceAggregation logic,
+                            RoomPermission rules)
+  ChatApp.Data/
+    ChatDbContext.cs        single context, UseSnakeCaseNamingConvention
+    Entities/, Configurations/, Migrations/
+    Services/               AuthService, SessionLookupService, SessionQueryService,
+                            SessionRevocationService, ProfileService,
+                            AccountDeletionService, FriendshipService,
+                            UserBanService, PersonalChatService, RoomService,
+                            RoomPermissionService, InvitationService,
+                            ModerationService, MessageService, UnreadService,
+                            AttachmentService, NoOpScanner, ClamAvScanner
+  ChatApp.Tests/            xUnit — Unit/ (permission matrix, presence aggregation,
+                            MIME sniff) + Integration/ (Testcontainers Postgres +
+                            WebApplicationFactory)
 
-client/                     Angular workspace
+client/                     Angular 19 standalone workspace
   src/app/
-    core/                   auth guard, http interceptor, signalr client
-    features/auth, app-shell, rooms, dms, contacts, sessions, profile, manage-room
-    shared/                 ui components, pipes
+    core/                   auth (guard, service, models), http (credentials,
+                            CSRF, error interceptors), signalr, messaging,
+                            presence, rooms, social, sessions, profile, users,
+                            notifications, context, layout, theme
+    features/               auth, app-shell, rooms, dms, contacts, sessions,
+                            profile, manage-room
+    shared/                 ui, pipes, messaging
+  e2e/                      Playwright (auth, messaging, attachments, presence)
 
 infra/
-  docker-compose.yml        services: api, web, db  (no clamav for MVP)
-  Dockerfile.api
-  Dockerfile.web
-  nginx.conf
+  docker-compose.yml        services: db, api, web, clamav (clamav is optional —
+                            swap scanner config to noop to run without it)
+  Dockerfile.api            multi-stage .NET 10 build
+  Dockerfile.web            Angular build → nginx
+  nginx.conf                static bundle, /api + /hub reverse proxy, CSP + headers
 ```
 
 ## Bounded contexts
@@ -146,8 +178,8 @@ flowchart TB
 **Presence** — heartbeat ingestion, per-user state aggregation across tabs, fan-out list resolution. Publishes `online | afk | offline` transitions via PresenceHub, broadcast only to the target user's contacts and room-mates.
 
 **Realtime (cross-cutting)** — two SignalR hubs:
-- `PresenceHub`: client → `Heartbeat(isActive)`; server → `PresenceChanged(userId, state)`.
-- `ChatHub`: server → `MessageCreated`, `MessageEdited`, `MessageDeleted`, `RoomMemberChanged`, `RoomBanned`, `ModerationAction`, `UnreadChanged`. Groups: `room:{roomId}`, `pchat:{personalChatId}`, `user:{userId}`. Hub exposes **no** write methods for messages; writes go through REST.
+- `PresenceHub`: client → `Heartbeat(isActive)`; server → `PresenceChanged(userId, state)`. Heartbeats are gated by `HubRateLimiter` to shed misbehaving clients.
+- `ChatHub`: server → `MessageCreated`, `MessageEdited`, `MessageDeleted`, `RoomMemberChanged`, `RoomBanned`, `ModerationAction`, `UnreadChanged`. Groups: `room:{roomId}`, `pchat:{personalChatId}`, `user:{userId}`. The hub exposes group-join/leave helpers only — **no** message write methods. All fan-out goes through `ChatBroadcaster` (registered singleton, wraps `IHubContext<ChatHub>`) so controllers and services have a single seam.
 
 ## Runtime model
 
@@ -191,10 +223,10 @@ Edit and delete follow the same shape with `MessageEdited` / `MessageDeleted`.
 
 ### Auth flow
 
-- Login → PBKDF2 compare → generate 32-byte token → store `sha256(token)` in `Session` → set `HttpOnly; Secure; SameSite=Lax` cookie.
-- Middleware on every request: hash cookie → look up `Session` (cached 30 s in `IMemoryCache`) → attach `ClaimsPrincipal`. `last_seen_at` updated fire-and-forget.
-- SignalR uses the same cookie; `OnConnectedAsync` re-checks the session so revocation is honoured on next reconnect.
-- CSRF: double-submit token on non-GET REST. SignalR is cookie + Origin checked.
+- Login → PBKDF2 compare (`PasswordHasher<User>`) → generate 32-byte token → store `sha256(token)` in `Session` → set `HttpOnly; Secure; SameSite=Lax` cookie. Login is additionally gated by `LoginRateLimiter` (per-IP + per-email buckets per spec §3).
+- Authentication is implemented as a custom auth scheme, `SessionAuthenticationHandler`, rather than the built-in cookie handler — it reads the cookie, delegates to `SessionLookupService` (30 s `IMemoryCache` hit; miss falls through to `ChatDbContext`), and attaches a `ClaimsPrincipal`. `last_seen_at` is updated fire-and-forget.
+- SignalR uses the same cookie; `OnConnectedAsync` re-checks the session through the same path so revocation is honoured on reconnect.
+- CSRF: double-submit token via custom middleware on non-GET REST; SignalR is cookie + Origin checked. Reverse-proxy scheme/IP are recovered via `UseForwardedHeaders` so `Secure` cookies and logged IPs are correct behind nginx.
 
 ## Data ownership
 
@@ -210,8 +242,8 @@ Single shared `ChatDbContext` for pragmatic reasons (one migrations history). Co
 
 ## Non-functional notes
 
-- **Security**: PBKDF2 password hashing, HttpOnly+Secure cookies, SameSite=Lax, double-submit CSRF on non-GET, EF Core parameterised queries, authn on all upload/download endpoints, magic-byte MIME sniff, `X-Content-Type-Options: nosniff`, `Content-Disposition: attachment` on file downloads, CSP on web container, rate limits per spec.
-- **Observability**: Serilog structured logging → stdout. All moderation writes a `ModerationAudit` row. SignalR connect/disconnect logged at Information.
+- **Security**: PBKDF2 password hashing, HttpOnly+Secure cookies, SameSite=Lax, double-submit CSRF on non-GET, EF Core parameterised queries, authn on all upload/download endpoints, magic-byte MIME sniff, `X-Content-Type-Options: nosniff`, `Content-Disposition: attachment` on file downloads, CSP + security headers in nginx, rate limits per spec (REST via `AddRateLimiter`, login via `LoginRateLimiter`, hub via `HubRateLimiter`).
+- **Observability**: Serilog structured logging → stdout with request logging. All moderation writes a `ModerationAudit` row. SignalR connect/disconnect logged at Information. `/health` endpoint reports DB and (when enabled) ClamAV liveness. RFC 7807 `ProblemDetails` for error responses.
 - **Performance**: keyset pagination on messages (`WHERE (created_at, id) < (@c, @i) ORDER BY created_at DESC, id DESC LIMIT 50`). Client virtualises via Angular CDK `cdk-virtual-scroll-viewport`. Targets: message p95 < 3 s, presence p95 < 2 s.
 - **Persistence**: indefinite message retention. Files removed only on room hard-delete or attachment row purge.
 
@@ -232,13 +264,14 @@ With those three swapped, multiple API containers can sit behind nginx without f
 4. **Load** (`k6`): 300 WS clients, 1 msg / 5 s each; assert p95 delivery < 3 s.
 5. **Security smoke**: attempt to download a room attachment after being banned (expect 403); register a fake `IAttachmentScanner` that always rejects, confirm upload returns 422 — proves the hook is wired.
 
-## Critical files to create / touch
+## Key files
 
-- `server/ChatApp.sln`
-- `server/ChatApp.Api/Program.cs` — DI wiring, rate limiter, auth, SignalR, `IAttachmentScanner` = `NoOpScanner`
-- `server/ChatApp.Api/Hubs/{PresenceHub,ChatHub}.cs`
-- `server/ChatApp.Api/Controllers/*` (one per context)
-- `server/ChatApp.Domain/Services/{PresenceAggregator,RoomPermissionService,AttachmentPipeline,UnreadService}.cs`
-- `server/ChatApp.Data/ChatDbContext.cs`, entity configs, initial migration
-- `client/src/app/core/signalr.service.ts`, `core/auth.*`, `features/**`
-- `infra/docker-compose.yml` (api, web, db — **no clamav**), `Dockerfile.api`, `Dockerfile.web`, `nginx.conf`
+- `server/ChatApp.sln`, `server/global.json` (SDK `10.0.100`), `server/Directory.Build.props` (`TreatWarningsAsErrors=true`, `Nullable=enable`).
+- `server/ChatApp.Api/Program.cs` — DI wiring, `SessionAuthenticationHandler`, CSRF middleware, REST + login + hub rate limiters, SignalR, scanner selection (`ChatApp:Attachments:Scanner`), forwarded headers, health checks, ProblemDetails.
+- `server/ChatApp.Api/Hubs/{PresenceHub,ChatHub}.cs`, `Infrastructure/ChatBroadcaster.cs`, `Infrastructure/PresenceAggregator.cs` + tick hosted service, `Infrastructure/AttachmentPurger.cs`.
+- `server/ChatApp.Api/Controllers/*` grouped by context (Auth, Users, Sessions, Social, Rooms, Messages, Attachments).
+- `server/ChatApp.Domain/` — `IAttachmentScanner`, `IPresenceStore`, `ICurrentUser`, image-processor interfaces, enums, pure helpers.
+- `server/ChatApp.Data/ChatDbContext.cs`, entity configurations, migrations, and `Services/*` implementations (including `NoOpScanner`, `ClamAvScanner`).
+- `server/ChatApp.Tests/` — Unit and Integration suites.
+- `client/src/app/core/**`, `features/**`, `shared/**`; `client/e2e/` Playwright.
+- `infra/docker-compose.yml` (db, api, web, clamav), `Dockerfile.api`, `Dockerfile.web`, `nginx.conf`.

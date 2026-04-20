@@ -1,0 +1,46 @@
+@if (replyingTo) {
+  <div class="reply-bar">
+    <div class="reply-bar__content">
+      <span class="reply-bar__label">Replying to <strong>{{ replyingTo.authorDisplayName }}</strong></span>
+      <span class="reply-bar__snippet">{{ replyingTo.body }}</span>
+    </div>
+    <button type="button" class="reply-bar__cancel" (click)="cancelReply.emit()">×</button>
+  </div>
+}
+@if (pending().length > 0) {
+  <div class="attachment-strip">
+    @for (p of pending(); track p.localId) {
+      <div class="attachment-strip__item" [class.attachment-strip__item--failed]="p.status === 'failed'">
+        @if (p.previewUrl) {
+          <img class="attachment-strip__thumb" [src]="p.previewUrl" [alt]="p.file.name" />
+        } @else {
+          <div class="attachment-strip__icon">📄</div>
+        }
+        <span class="attachment-strip__name" [title]="p.file.name">{{ p.file.name }}</span>
+        <button type="button" class="attachment-strip__remove" (click)="removeAttachment(p.localId)">×</button>
+      </div>
+    }
+  </div>
+}
+<div class="composer" [class.composer--drag-over]="dragOver()"
+     (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+  <input #fileInput type="file" multiple class="composer__file-input"
+         accept="image/*,.pdf,.zip,.doc,.docx,.xlsx,.xls,.txt"
+         (change)="onFileSelected($event)" />
+  <button type="button" class="composer__icon-btn" (click)="openFilePicker()" [disabled]="disabled" title="Attach file">
+    <lucide-icon [img]="PaperclipIcon" [size]="18" />
+  </button>
+  <textarea
+    class="composer__textarea"
+    [value]="body()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (paste)="onPaste($event)"
+    rows="1"
+    placeholder="Type a message…"
+    [disabled]="disabled"
+  ></textarea>
+  <button type="button" class="composer__send" [disabled]="!canSend" (click)="submit()" title="Send">
+    <lucide-icon [img]="SendIcon" [size]="18" />
+  </button>
+</div>

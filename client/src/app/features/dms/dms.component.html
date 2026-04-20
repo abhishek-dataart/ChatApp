@@ -1,0 +1,37 @@
+<div class="dm-page">
+  @if (loading()) {
+    <div class="dm-loading">
+      <ui-skeleton height="16px" />
+    </div>
+  } @else {
+    <div class="dm-messages">
+      <app-message-list
+        [messages]="messages()"
+        [currentUserId]="currentUser()?.id ?? ''"
+        [isLoadingOlder]="dmService.isLoadingOlder()"
+        (editMessage)="onEditMessage($event)"
+        (deleteMessage)="onDeleteMessage($event)"
+        (replyTo)="onReplyTo($event)"
+        (loadOlder)="onLoadOlder()"
+      />
+    </div>
+    @if (sendError()) {
+      <p class="send-error">{{ sendError() }}</p>
+    }
+    @if (banStatus()?.bannedByMe) {
+      <div class="ban-banner">
+        You have blocked this user.
+        <ui-button variant="secondary" size="sm" (click)="unblock()">Unblock</ui-button>
+      </div>
+    } @else if (banStatus()?.bannedByThem) {
+      <div class="ban-banner ban-banner--blocked">You cannot message this user.</div>
+    } @else {
+      <app-message-composer
+        [disabled]="sending()"
+        [replyingTo]="replyingTo()"
+        (send)="onSend($event)"
+        (cancelReply)="onCancelReply()"
+      />
+    }
+  }
+</div>

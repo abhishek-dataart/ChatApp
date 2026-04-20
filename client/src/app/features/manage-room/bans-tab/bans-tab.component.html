@@ -1,0 +1,33 @@
+@if (loading()) {
+  <p class="loading">Loading...</p>
+} @else if (error()) {
+  <p class="error">{{ error() }}</p>
+} @else if ((bans()?.length ?? 0) === 0) {
+  <p class="empty">No active bans.</p>
+} @else {
+  <ul class="ban-list">
+    @for (ban of bans()!; track ban.banId) {
+      <li class="ban-row">
+        <div class="ban-info">
+          <div class="ban-user">
+            @if (ban.user.avatarUrl) {
+              <img class="avatar" [src]="ban.user.avatarUrl" [alt]="ban.user.displayName" />
+            } @else {
+              <div class="avatar avatar--placeholder">{{ ban.user.displayName[0] }}</div>
+            }
+            <div>
+              <span class="display-name">{{ ban.user.displayName }}</span>
+              <span class="username"> &#64;{{ ban.user.username }}</span>
+            </div>
+          </div>
+          <span class="ban-meta">Banned by {{ ban.bannedBy.displayName }} on {{ ban.createdAt | date:'yyyy-MM-dd' }}</span>
+        </div>
+        <button type="button" class="btn-unban"
+          [disabled]="acting() === ban.banId"
+          (click)="unban(ban)">
+          {{ acting() === ban.banId ? '...' : 'Unban' }}
+        </button>
+      </li>
+    }
+  </ul>
+}

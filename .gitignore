@@ -1,0 +1,64 @@
+# --- .NET ---
+bin/
+obj/
+out/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pidb
+*.binlog
+*.tlog
+.vs/
+TestResults/
+*.coverage
+*.coveragexml
+coverage.*.xml
+coverage.cobertura.xml
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+artifacts/
+publish/
+
+# --- Node / Angular ---
+node_modules/
+dist/
+.angular/
+.nx/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+**/test-results/*
+
+# --- Environments / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Runtime data volumes ---
+data/files/*
+!data/files/.gitkeep
+data/pg/*
+!data/pg/.gitkeep
+
+# --- IDE / OS ---
+.idea/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- VS Code (allow a curated subset if ever needed) ---
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# --- Misc ---
+*.log
+*.swp
+*~

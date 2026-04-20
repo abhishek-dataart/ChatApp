@@ -1,0 +1,58 @@
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+<table class="members-table">
+  <thead>
+    <tr>
+      <th>Member</th>
+      <th>Status</th>
+      <th>Role</th>
+      <th>Joined</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (member of room.members; track member.user.id) {
+      <tr>
+        <td>
+          <div class="member-cell">
+            @if (member.user.avatarUrl) {
+              <img class="avatar" [src]="member.user.avatarUrl" [alt]="member.user.displayName" />
+            } @else {
+              <div class="avatar avatar--placeholder">{{ member.user.displayName[0] }}</div>
+            }
+            <div class="member-info">
+              <span class="display-name">{{ member.user.displayName }}</span>
+              <span class="username">&#64;{{ member.user.username }}</span>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="presence-cell">
+            <ui-presence-dot [status]="presenceOf(member.user.id)()"></ui-presence-dot>
+            <span class="presence-label">{{ presenceOf(member.user.id)() }}</span>
+          </div>
+        </td>
+        <td>
+          <span class="role-badge role-badge--{{ member.role }}">{{ member.role }}</span>
+        </td>
+        <td class="joined-at">{{ member.joinedAt | date:'yyyy-MM-dd' }}</td>
+        <td>
+          <div class="actions">
+            @if (canKick(member)) {
+              <button type="button" class="btn-action btn-remove"
+                [disabled]="acting() === member.user.id"
+                (click)="kick(member)">Remove</button>
+            }
+            @if (canBan(member)) {
+              <button type="button" class="btn-action btn-ban"
+                [disabled]="acting() === member.user.id"
+                (click)="ban(member)">Ban</button>
+            }
+          </div>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
