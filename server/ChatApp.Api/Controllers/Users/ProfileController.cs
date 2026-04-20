@@ -6,6 +6,7 @@ using ChatApp.Data.Services.Identity;
 using ChatApp.Domain.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -14,6 +15,7 @@ namespace ChatApp.Api.Controllers.Users;
 [ApiController]
 [Route("api/profile")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class ProfileController : ControllerBase
 {
     private readonly ProfileService _profile;

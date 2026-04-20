@@ -147,6 +147,28 @@
   }
 }
 
+.field--inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.field__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+  }
+}
+
 .field__error {
   font-size: var(--text-xs);
   color: var(--color-danger);

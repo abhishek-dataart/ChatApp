@@ -43,6 +43,13 @@
           }
         </div>
 
+        <div class="field field--inline">
+          <label class="field__checkbox">
+            <input type="checkbox" formControlName="keepSignedIn" />
+            <span>Keep me signed in</span>
+          </label>
+        </div>
+
         @if (error()) {
           <p class="auth-error" role="alert">{{ error() }}</p>
         }

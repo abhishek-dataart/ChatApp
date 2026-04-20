@@ -25,6 +25,7 @@ export class LoginComponent {
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
+    keepSignedIn: [false],
   });
 
   async submit(): Promise<void> {
@@ -35,7 +36,8 @@ export class LoginComponent {
     this.submitting.set(true);
     this.error.set(null);
     try {
-      await this.auth.login(this.form.getRawValue());
+      const { email, password } = this.form.getRawValue();
+      await this.auth.login({ email, password });
       await this.router.navigateByUrl('/app');
     } catch (err) {
       if (err instanceof HttpErrorResponse) {

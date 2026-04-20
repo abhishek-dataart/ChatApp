@@ -4,12 +4,14 @@ using ChatApp.Data.Services.Rooms;
 using ChatApp.Domain.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ChatApp.Api.Controllers.Rooms;
 
 [ApiController]
 [Route("api/rooms/{roomId:guid}")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class ModerationController(ModerationService moderation, ICurrentUser current) : ControllerBase
 {
     [HttpPost("bans")]

@@ -71,6 +71,19 @@ Already handled by `LoginRateLimiter` singleton (10/min/IP + 5/min/email). No ne
 
 Not added — the spec defines per-endpoint limits only. A global policy would interfere with health probes and static assets.
 
+### 1.5 General anti-spam policy (post-spec addition)
+
+A follow-up widened rate limiting beyond login/messages/uploads, since the spec's per-endpoint list left friendships, invitations, moderation, profile edits, and message edits/deletes unguarded against spam.
+
+**Policy:** `"general"` — `TokenBucketRateLimiter`, 60 tokens burst, replenishment = 1 token / 1 s per partition. Partition key: authenticated `userId`, falling back to `RemoteIpAddress`. Queue = 0. Registered in `Program.cs` alongside `"messages"` and `"uploads"`.
+
+**Applied at the controller level via `[EnableRateLimiting("general")]`** on:
+- `RoomsController`, `InvitationsController`, `ModerationController`
+- `FriendshipsController`, `BansController`
+- `ProfileController`
+
+**Also applied:** `[EnableRateLimiting("messages")]` on `MessagesController` (PUT/DELETE edit & delete) — previously only the POST send endpoints used the messages policy.
+
 ---
 
 ## 2 — Hub Rate Limiting

@@ -9,7 +9,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { LucideAngularModule, Paperclip, Send } from 'lucide-angular';
+import { LucideAngularModule, Paperclip, Send, Smile } from 'lucide-angular';
 import { AttachmentsService } from '../../core/messaging/attachments.service';
 import { MessageResponse, PendingAttachment } from '../../core/messaging/messaging.models';
 import { ToastService } from '../../core/notifications/toast.service';
@@ -29,12 +29,21 @@ export class MessageComposerComponent {
   @Output() cancelReply = new EventEmitter<void>();
 
   @ViewChild('fileInput') private fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('textArea') private textArea!: ElementRef<HTMLTextAreaElement>;
 
   private readonly attachmentsService = inject(AttachmentsService);
   private readonly toast = inject(ToastService);
 
   readonly PaperclipIcon = Paperclip;
   readonly SendIcon = Send;
+  readonly SmileIcon = Smile;
+
+  readonly emojiPickerOpen = signal(false);
+  readonly commonEmojis: readonly string[] = [
+    '😀', '😂', '😍', '😎', '😭', '😡', '👍', '👎',
+    '🙏', '👏', '🎉', '🔥', '💯', '❤️', '💔', '✨',
+    '🤔', '😅', '😊', '🙌', '💪', '🚀', '✅', '❌',
+  ];
 
   readonly body = signal('');
   readonly byteCount = signal(0);
@@ -84,6 +93,32 @@ export class MessageComposerComponent {
     for (const file of Array.from(event.dataTransfer?.files ?? [])) {
       this.queue(file);
     }
+  }
+
+  toggleEmojiPicker(): void {
+    this.emojiPickerOpen.update((v) => !v);
+  }
+
+  insertEmoji(emoji: string): void {
+    const ta = this.textArea?.nativeElement;
+    const current = this.body();
+    if (ta && typeof ta.selectionStart === 'number') {
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd ?? start;
+      const next = current.slice(0, start) + emoji + current.slice(end);
+      this.body.set(next);
+      this.byteCount.set(new TextEncoder().encode(next).length);
+      queueMicrotask(() => {
+        ta.focus();
+        const pos = start + emoji.length;
+        ta.setSelectionRange(pos, pos);
+      });
+    } else {
+      const next = current + emoji;
+      this.body.set(next);
+      this.byteCount.set(new TextEncoder().encode(next).length);
+    }
+    this.emojiPickerOpen.set(false);
   }
 
   openFilePicker(): void {

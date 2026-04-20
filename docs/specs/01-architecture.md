@@ -46,7 +46,8 @@ server/
     Infrastructure/         SessionAuthenticationHandler, CSRF middleware,
                             ChatBroadcaster, PresenceAggregator / PresenceTickService,
                             LoginRateLimiter, HubRateLimiter, image processors,
-                            ProblemDetails / error handling, AttachmentPurger
+                            ProblemDetails / error handling, AttachmentPurger,
+                            SoftDeletedRoomPurger
   ChatApp.Domain/           abstractions (IAttachmentScanner, IPresenceStore,
                             ICurrentUser, image-processor interfaces),
                             enums, pure helpers (PresenceAggregation logic,
@@ -242,10 +243,10 @@ Single shared `ChatDbContext` for pragmatic reasons (one migrations history). Co
 
 ## Non-functional notes
 
-- **Security**: PBKDF2 password hashing, HttpOnly+Secure cookies, SameSite=Lax, double-submit CSRF on non-GET, EF Core parameterised queries, authn on all upload/download endpoints, magic-byte MIME sniff, `X-Content-Type-Options: nosniff`, `Content-Disposition: attachment` on file downloads, CSP + security headers in nginx, rate limits per spec (REST via `AddRateLimiter`, login via `LoginRateLimiter`, hub via `HubRateLimiter`).
+- **Security**: PBKDF2 password hashing, HttpOnly+Secure cookies, SameSite=Lax, double-submit CSRF on non-GET, EF Core parameterised queries, authn on all upload/download endpoints, magic-byte MIME sniff, `X-Content-Type-Options: nosniff`, `Content-Disposition: attachment` on file downloads, CSP + security headers in nginx, rate limits per spec (REST via `AddRateLimiter` — named policies `"login"`, `"messages"`, `"uploads"`, `"general"`; login via `LoginRateLimiter`; hub via `HubRateLimiter`). The `"general"` anti-spam policy (60 burst, 1/s refill, per-user) guards write surfaces not covered by `"messages"` or `"uploads"` — friendships, invitations, moderation, room bans, profile edits, and message edit/delete. **No self-service password reset** — a forgot-password flow is TBD (see product spec §3).
 - **Observability**: Serilog structured logging → stdout with request logging. All moderation writes a `ModerationAudit` row. SignalR connect/disconnect logged at Information. `/health` endpoint reports DB and (when enabled) ClamAV liveness. RFC 7807 `ProblemDetails` for error responses.
 - **Performance**: keyset pagination on messages (`WHERE (created_at, id) < (@c, @i) ORDER BY created_at DESC, id DESC LIMIT 50`). Client virtualises via Angular CDK `cdk-virtual-scroll-viewport`. Targets: message p95 < 3 s, presence p95 < 2 s.
-- **Persistence**: indefinite message retention. Files removed only on room hard-delete or attachment row purge.
+- **Persistence**: indefinite message retention. Files removed on attachment row purge (unlinked orphans older than 1 h) and on soft-deleted room purge — `SoftDeletedRoomPurger` (background service, 15-min tick) invokes `RoomPurgeService.PurgeOnceAsync(minAge: 1 h)`, which deletes attachment files from disk and cascades message + attachment rows for any room whose `deleted_at` is older than the grace period. The `rooms` row is retained with `deleted_at` set.
 
 ## Scale-out path (future, not MVP)
 

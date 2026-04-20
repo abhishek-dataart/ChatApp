@@ -4,11 +4,13 @@ using ChatApp.Data.Services.Rooms;
 using ChatApp.Domain.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ChatApp.Api.Controllers.Rooms;
 
 [ApiController]
 [Authorize]
+[EnableRateLimiting("general")]
 public class InvitationsController(InvitationService invitations, ICurrentUser current) : ControllerBase
 {
     [HttpPost("api/rooms/{roomId:guid}/invitations")]

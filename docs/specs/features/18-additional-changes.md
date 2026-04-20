@@ -2,11 +2,13 @@
 
 ## Context
 
-Audit of `docs/requirements/requirement.md` against the current implementation surfaced four gaps. Password reset (req 2.1.4) is intentionally out of scope for this spec. The remaining three gaps are covered here:
+Audit of `docs/requirements/requirement.md` against the current implementation surfaced four gaps. Password reset (req 2.1.4) is intentionally **TBD** — see `00-product-spec.md §3`; there is no self-service recovery path today. The remaining three gaps are covered here:
 
 1. **Account deletion** (req 2.1.5) — no endpoint or UI exists.
 2. **Top menu split** (req 4.1 / wireframe A.3) — single "Rooms" link; spec requires distinct "Public Rooms" and "Private Rooms" links.
 3. **Manage Room dialog tab structure** (req 4.5 / wireframe A.4) — missing dedicated `Admins` and `Invitations` tabs; promote/demote is inside Members, invites are inlined in Settings.
+
+A follow-up pass added four further items, documented in `§4–§7` below.
 
 Intended outcome: ship the Delete Account feature with full cascade, reshape the rooms navigation to match the wireframe, and refactor the Manage Room dialog tabs to match the spec.
 
@@ -112,6 +114,60 @@ None required; existing moderation + invitations endpoints suffice.
 
 ---
 
+---
+
+## 4. Emoji support in messages
+
+**Gap:** requirement called out explicit emoji support; composer accepted any Unicode implicitly but gave no quick-insert affordance.
+
+**Server:** no change. `Message.Body` is stored as UTF-8 `text`; the 3 KB limit is measured in UTF-8 bytes, so multi-byte emoji count against capacity correctly.
+
+**Client:** `client/src/app/shared/messaging/message-composer.component.*` grew a `Smile`-icon button (lucide) adjacent to the paperclip. Clicking opens a small popover with a fixed grid of common emoji; selecting one inserts it at the current cursor position (`textarea.selectionStart/End`) and closes the popover. Uses existing `body` signal and `byteCount` recomputation — no new state store.
+
+**Verification:** open the composer, insert 👍 into the middle of a partially-typed message, confirm caret position preserved and byte counter updates; round-trip via send → server → broadcast → render shows the emoji unchanged.
+
+---
+
+## 5. "Keep me signed in" checkbox on login (UI only)
+
+**Gap:** requirement / wireframe A.1 shows a *Keep me signed in* toggle; sessions are already non-expiring per spec §3, so the control is cosmetic until a future change introduces session expiry.
+
+**Server:** no change.
+
+**Client:** `client/src/app/features/auth/login/login.component.*` — add a `keepSignedIn` form control (default `false`), render a checkbox above the submit button, leave the login payload (`{ email, password }`) unchanged. Intentionally not wired through `AuthService.login`; a future slice that adds session TTLs will promote this flag to the request body.
+
+---
+
+## 6. Rate limiting beyond login
+
+See `17-hardening-rate-limits-csrf-headers.md §1.5`. Summary: a new `"general"` token-bucket policy (60 burst, 1/s refill, per-user) covers friendships, invitations, moderation, profile, and room bans; `"messages"` now also applies to `MessagesController` edit/delete (previously POST-only).
+
+---
+
+## 7. Purge messages + files for soft-deleted rooms
+
+**Gap:** `RoomService.DeleteAsync` sets `rooms.deleted_at` but leaves every row in `messages`, every row in `attachments`, and every file under `files/attachments/**` untouched. Storage grew monotonically.
+
+**Design**
+
+- `server/ChatApp.Data/Services/Rooms/RoomPurgeService.cs` (new) — `PurgeOnceAsync(TimeSpan minAge, ct)`:
+  1. Pick room ids where `deleted_at IS NOT NULL AND deleted_at < now() - minAge`.
+  2. For each room: stream `(stored_path, thumb_path)` of attachments linked (via `Message.RoomId`) to that room; best-effort `File.Delete` each path under `AttachmentsOptions.FilesRoot`.
+  3. `db.Messages.Where(m => m.RoomId == roomId).ExecuteDeleteAsync(ct)` — the existing `Attachment.MessageId` FK (`OnDelete.Cascade`) removes the attachment rows in the same statement.
+  4. The `rooms` row is kept with `deleted_at` set (soft-delete remains the authoritative state for UI and audit).
+- `server/ChatApp.Api/Infrastructure/Rooms/SoftDeletedRoomPurger.cs` (new) — `BackgroundService`; ticks every 15 minutes and invokes `RoomPurgeService.PurgeOnceAsync(minAge: 1 h)` in a fresh DI scope. Errors are logged; the loop keeps running.
+- `Program.cs` — `AddScoped<RoomPurgeService>()` + `AddHostedService<SoftDeletedRoomPurger>()`; import `ChatApp.Api.Infrastructure.Rooms`.
+
+**Why a grace period:** `1 h` gives operators a window to recover from accidental deletions (undelete = clearing `deleted_at`). The 15-min tick keeps the queue short without hammering the DB.
+
+**Not in scope:** hard-deleting the `rooms` row, purging `room_members` / `room_invitations` / `room_bans` / `moderation_audit`. Those remain soft-tied to the room for reporting; they can be removed in a later pass if needed.
+
+**Verification:**
+- Integration test — create room, send message with image attachment (file on disk), soft-delete room, fast-forward `deleted_at` by > 1 h, invoke `RoomPurgeService.PurgeOnceAsync(TimeSpan.FromHours(1), ct)`. Assert: messages row count = 0 for that room, attachment rows cascade-gone, files missing from disk, `rooms` row still present with `deleted_at` set.
+- Manual — soft-delete a room, watch `logs` for `Purged N messages and M attachment files for soft-deleted room {RoomId}.` after the next tick.
+
+---
+
 ## Critical files
 
 Server:
@@ -121,10 +177,18 @@ Server:
 - `server/ChatApp.Data/Configurations/Rooms/RoomConfiguration.cs` (+ other FK configs above)
 - `server/ChatApp.Data/Services/Identity/AccountDeletionService.cs` (new)
 - `server/ChatApp.Data/Services/Rooms/RoomService.cs` (hard-purge path)
-- `server/ChatApp.Api/Controllers/Users/ProfileController.cs`
+- `server/ChatApp.Data/Services/Rooms/RoomPurgeService.cs` (new — §7)
+- `server/ChatApp.Api/Infrastructure/Rooms/SoftDeletedRoomPurger.cs` (new — §7)
+- `server/ChatApp.Api/Controllers/Users/ProfileController.cs` (+ `[EnableRateLimiting("general")]` — §6)
+- `server/ChatApp.Api/Controllers/Rooms/{Rooms,Invitations,Moderation}Controller.cs` (`"general"` policy — §6)
+- `server/ChatApp.Api/Controllers/Social/{Friendships,Bans}Controller.cs` (`"general"` policy — §6)
+- `server/ChatApp.Api/Controllers/Messages/MessagesController.cs` (`"messages"` policy — §6)
+- `server/ChatApp.Api/Program.cs` (new `"general"` rate-limit policy + `RoomPurgeService` + `SoftDeletedRoomPurger` registrations)
 - new EF migration
 
 Client:
+- `client/src/app/shared/messaging/message-composer.component.{ts,html,scss}` (emoji picker — §4)
+- `client/src/app/features/auth/login/login.component.{ts,html,scss}` ("Keep me signed in" — §5)
 - `client/src/app/app.routes.ts`
 - `client/src/app/features/app-shell/app-shell.component.html`
 - `client/src/app/features/rooms/rooms-list/` → split into `public-rooms/` and `private-rooms/`

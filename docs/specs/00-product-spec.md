@@ -54,7 +54,7 @@ All IDs are `uuid` unless stated.
 - **Login**: email + password → HttpOnly, Secure, SameSite=Lax cookie holding opaque session id (32 bytes, base64). Server stores `sha256(cookie)` only.
 - **Session lifetime**: no expiry — sessions live until explicit logout or admin action; `last_seen_at` refreshed on use.
 - **Sessions screen**: list of active sessions (browser/UA, IP, last-seen); user may revoke any. Revoking current session logs this browser out. Revoking others does not affect this browser.
-- **Password change** (logged-in, requires current password). **No password reset flow.**
+- **Password change** (logged-in, requires current password). **Password reset / forgot-password flow is TBD** — not yet designed or implemented; users who lose their password have no self-service recovery path today.
 - **Account deletion**:
   - Soft-delete user row (`deleted_at` set).
   - `display_name` and `username` hidden in UI as `[deleted user]`; username remains reserved (not reusable).

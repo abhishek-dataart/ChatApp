@@ -4,12 +4,14 @@ using ChatApp.Domain.Abstractions;
 using ChatApp.Domain.Services.Social;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ChatApp.Api.Controllers.Social;
 
 [ApiController]
 [Route("api/friendships")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class FriendshipsController(
     FriendshipService friendships,
     ICurrentUser current) : ControllerBase

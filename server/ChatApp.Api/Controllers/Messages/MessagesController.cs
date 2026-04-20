@@ -4,10 +4,12 @@ using ChatApp.Domain.Abstractions;
 using ChatApp.Domain.Services.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ChatApp.Api.Controllers.Messages;
 
 [ApiController, Route("api/messages"), Authorize]
+[EnableRateLimiting("messages")]
 public sealed class MessagesController(
     MessageService messages,
     ICurrentUser currentUser) : ControllerBase

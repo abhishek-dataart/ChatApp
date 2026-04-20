@@ -310,8 +310,6 @@ public class RoomService(
             }
         }
 
-        // TODO(slice-15): purge messages + attachment files for soft-deleted rooms via background job.
-
         return (true, null, null);
     }
 

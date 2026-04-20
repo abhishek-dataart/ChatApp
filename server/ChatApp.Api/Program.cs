@@ -7,6 +7,7 @@ using ChatApp.Api.Infrastructure.Configuration;
 using ChatApp.Api.Infrastructure.Csrf;
 using ChatApp.Api.Infrastructure.Images;
 using ChatApp.Api.Infrastructure.Presence;
+using ChatApp.Api.Infrastructure.Rooms;
 using ChatApp.Api.Infrastructure.Scanning;
 using ChatApp.Data;
 using ChatApp.Data.Entities.Identity;
@@ -123,6 +124,23 @@ public class Program
                 });
             });
 
+            // General anti-spam limiter for non-message write endpoints (friendships, invitations,
+            // room moderation, profile edits, etc.). Per-user token bucket: 60 burst, refilled 1/s.
+            opts.AddPolicy("general", context =>
+            {
+                var partitionKey = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? context.Connection.RemoteIpAddress?.ToString()
+                    ?? "anonymous";
+                return RateLimitPartition.GetTokenBucketLimiter(partitionKey, _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit          = 60,
+                    TokensPerPeriod     = 1,
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                    AutoReplenishment   = true,
+                    QueueLimit          = 0,
+                });
+            });
+
             opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             opts.OnRejected = async (ctx, ct) =>
             {
@@ -170,6 +188,8 @@ public class Program
         builder.Services.AddScoped<RoomPermissionService>();
         builder.Services.AddScoped<InvitationService>();
         builder.Services.AddScoped<ModerationService>();
+        builder.Services.AddScoped<RoomPurgeService>();
+        builder.Services.AddHostedService<SoftDeletedRoomPurger>();
 
         // Messaging
         builder.Services.AddSingleton<IChatBroadcaster, ChatBroadcaster>();

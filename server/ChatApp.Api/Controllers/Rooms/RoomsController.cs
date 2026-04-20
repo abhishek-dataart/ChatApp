@@ -5,6 +5,7 @@ using ChatApp.Domain.Abstractions;
 using ChatApp.Domain.Services.Rooms;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
 namespace ChatApp.Api.Controllers.Rooms;
@@ -12,6 +13,7 @@ namespace ChatApp.Api.Controllers.Rooms;
 [ApiController]
 [Route("api/rooms")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class RoomsController(RoomService rooms, ICurrentUser current, IOptions<FilesOptions> files) : ControllerBase
 {
     private readonly FilesOptions _files = files.Value;

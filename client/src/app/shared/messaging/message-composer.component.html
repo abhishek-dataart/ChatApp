@@ -30,7 +30,20 @@
   <button type="button" class="composer__icon-btn" (click)="openFilePicker()" [disabled]="disabled" title="Attach file">
     <lucide-icon [img]="PaperclipIcon" [size]="18" />
   </button>
+  <div class="composer__emoji-wrap">
+    <button type="button" class="composer__icon-btn" (click)="toggleEmojiPicker()" [disabled]="disabled" title="Insert emoji">
+      <lucide-icon [img]="SmileIcon" [size]="18" />
+    </button>
+    @if (emojiPickerOpen()) {
+      <div class="composer__emoji-popover" role="dialog">
+        @for (e of commonEmojis; track e) {
+          <button type="button" class="composer__emoji-btn" (click)="insertEmoji(e)">{{ e }}</button>
+        }
+      </div>
+    }
+  </div>
   <textarea
+    #textArea
     class="composer__textarea"
     [value]="body()"
     (input)="onInput($event)"

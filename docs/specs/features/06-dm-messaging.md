@@ -21,7 +21,7 @@ Outcome: A and B exchange DMs. A sends a message via REST → B's browser receiv
 | Topic | Decision | Rationale |
 |---|---|---|
 | Group join (server vs client) | `ChatHub.OnConnectedAsync` queries DB for user's personal chat IDs and joins each `pchat:{id}` group | No hub write methods; clean auth. New friends require reconnect to join their pchat group — acceptable for MVP. |
-| Body validation | UTF-8 byte length ≤ 3000 (not char count) | Arch doc says 3 KB; multi-byte Unicode counted as bytes. |
+| Body validation | UTF-8 byte length ≤ 3000 (not char count) | Arch doc says 3 KB; multi-byte Unicode counted as bytes. Emoji and other multi-byte characters are accepted — the composer and server both measure the limit in UTF-8 bytes. |
 | `Message.Scope` enum | `Personal = 0, Room = 1` | Room scope wired in slice 8; entity shape finalized now. |
 | History order | Last 50 messages, `ORDER BY created_at ASC LIMIT 50` | Slice 15 adds keyset pagination. No pagination param yet. |
 | `UnreadMarker` entity | Created; logic (increment on send) deferred to slice 9 | This slice's focus is write + broadcast, not unread. Entity shape must be correct now. |
